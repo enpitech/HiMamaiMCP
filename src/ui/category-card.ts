@@ -172,9 +172,7 @@ export function renderCategoryPageBody(page: CategoryPage): string {
     const icon = section.type === 'BRANDS' ? '🏷️' : section.type === 'CAMPAIGNS' ? '🎯' : '📦';
     const itemsHtml = visibleItems.map(renderCollectionItem).join('');
 
-    const seeAllHtml = section.seeAll
-      ? `<a class="category-see-all" href="https://hi-mami.com${section.seeAll.path}" target="_blank" rel="noopener">${section.seeAll.text} ←</a>`
-      : items.length > maxItems
+    const seeAllHtml = items.length > maxItems
         ? `<div class="category-see-all">+ ${items.length - maxItems} נוספים</div>`
         : '';
 

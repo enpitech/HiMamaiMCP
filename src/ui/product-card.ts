@@ -146,7 +146,6 @@ export function renderProductDetailBody(page: ProductPage): string {
           ctaHtml = `<div class="cta-box">
             <div class="cta-label">קוד:</div>
             ${data.codes.map((c) => `<span class="cta-code">${c.code}</span>`).join(' ')}
-            ${data.url ? `<div style="margin-top:10px"><a class="cta-link" href="${data.url}" target="_blank" rel="noopener">למימוש ←</a></div>` : ''}
           </div>`;
         }
         break;
@@ -154,16 +153,13 @@ export function renderProductDetailBody(page: ProductPage): string {
       case 'LEADING_LINK':
       case 'PURCHASE_LINK':
       case 'PERSONAL_LINK': {
-        const data = action.data as { url?: string } | null;
-        if (data?.url) {
-          ctaHtml = `<div class="cta-box"><a class="cta-link" href="${data.url}" target="_blank" rel="noopener">לרכישה ←</a></div>`;
-        }
+        ctaHtml = `<div class="cta-box"><div class="cta-label">🔗 ניתן למימוש דרך הלינק (ראה פרטים למטה)</div></div>`;
         break;
       }
       case 'CALL_TO_NUMBER': {
         const data = action.data as { phoneNumber?: string } | null;
         if (data?.phoneNumber) {
-          ctaHtml = `<div class="cta-box"><a class="cta-link" href="tel:${data.phoneNumber}">📞 ${data.phoneNumber}</a></div>`;
+          ctaHtml = `<div class="cta-box"><div class="cta-label">📞 טלפון: <span class="ltr-inline">${data.phoneNumber}</span></div></div>`;
         }
         break;
       }

@@ -164,7 +164,7 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
       return;
     }
 
-    // Only allow proxying images from known Hi Mami domains
+    // Validate URL format and protocol
     let parsed: URL;
     try {
       parsed = new URL(url);
@@ -173,9 +173,8 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
       return;
     }
 
-    const allowedHosts = ['hi-mami.com', 'dev.hi-mami.com', 'cdn.hi-mami.com', 'images.hi-mami.com'];
-    if (!allowedHosts.some((h) => parsed.hostname === h || parsed.hostname.endsWith('.' + h))) {
-      res.status(403).json({ error: 'Domain not allowed' });
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      res.status(400).json({ error: 'Only HTTP(S) URLs allowed' });
       return;
     }
 
@@ -188,6 +187,11 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
           return;
         }
         const contentType = upstream.headers.get('content-type') ?? 'image/jpeg';
+        // Only proxy image content types
+        if (!contentType.startsWith('image/')) {
+          res.status(403).json({ error: 'Not an image' });
+          return;
+        }
         res.setHeader('Content-Type', contentType);
         res.setHeader('Cache-Control', 'public, max-age=86400');
         const buffer = Buffer.from(await upstream.arrayBuffer());

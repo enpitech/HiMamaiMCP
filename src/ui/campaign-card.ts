@@ -150,25 +150,19 @@ function renderConversionAction(action: ConversionAction): string {
       if (data?.codes && data.codes.length > 0) {
         const codesList = data.codes.map((c) => `<span class="cta-code">${c.code}</span>`).join(' ');
         ctaContent = `<div class="cta-label">קוד:</div>${codesList}`;
-        if (data.url) {
-          ctaContent += `<div style="margin-top:10px"><a class="cta-link" href="${data.url}" target="_blank" rel="noopener">למימוש ←</a></div>`;
-        }
       }
       break;
     }
     case 'LEADING_LINK':
     case 'PURCHASE_LINK':
     case 'PERSONAL_LINK': {
-      const data = action.data as { url?: string } | null;
-      if (data?.url) {
-        ctaContent = `<a class="cta-link" href="${data.url}" target="_blank" rel="noopener">לפרטים ←</a>`;
-      }
+      ctaContent = `<div class="cta-label">🔗 ניתן למימוש דרך הלינק (ראה פרטים למטה)</div>`;
       break;
     }
     case 'CALL_TO_NUMBER': {
       const data = action.data as { phoneNumber?: string } | null;
       if (data?.phoneNumber) {
-        ctaContent = `<a class="cta-link" href="tel:${data.phoneNumber}">📞 ${data.phoneNumber}</a>`;
+        ctaContent = `<div class="cta-label">📞 טלפון: <span class="ltr-inline">${data.phoneNumber}</span></div>`;
       }
       break;
     }

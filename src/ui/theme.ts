@@ -7,43 +7,43 @@
 export function generateBaseCSS(): string {
   return `
     :root {
-      --color-primary: #FF6B9D;
-      --color-primary-dark: #E85588;
-      --color-secondary: rgba(255,107,157,0.1);
-      --color-accent: #7C6BC4;
-      --color-accent-light: #9B8FD8;
+      --color-primary: rgba(255,107,157,0.8);
+      --color-primary-dark: rgba(232,85,136,0.75);
+      --color-secondary: rgba(255,107,157,0.08);
+      --color-accent: rgba(124,107,196,0.75);
+      --color-accent-light: rgba(155,143,216,0.7);
       --color-success: #4ADE80;
       --color-warning: #FBBF24;
       --color-danger: #F87171;
-      --color-muted: #9CA3AF;
-      --color-text: #E5E7EB;
-      --color-text-light: #9CA3AF;
+      --color-muted: rgba(160,160,160,0.65);
+      --color-text: rgba(200,200,200,0.85);
+      --color-text-light: rgba(160,160,160,0.7);
       --color-bg: transparent;
-      --color-bg-alt: rgba(128,128,128,0.08);
-      --color-border: rgba(128,128,128,0.2);
-      --color-card-bg: rgba(128,128,128,0.06);
+      --color-bg-alt: rgba(128,128,128,0.05);
+      --color-border: rgba(128,128,128,0.12);
+      --color-card-bg: rgba(128,128,128,0.04);
       --color-mami-plus: #A78BFA;
       --color-mami-plus-bg: rgba(167,139,250,0.15);
       --border-radius: 12px;
       --border-radius-sm: 8px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.15);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.2);
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
       --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
     [data-theme="light"] {
-      --color-text: #1F2937;
-      --color-text-light: #6B7280;
-      --color-muted: #6B7280;
-      --color-bg-alt: rgba(0,0,0,0.03);
-      --color-border: rgba(0,0,0,0.1);
-      --color-card-bg: rgba(0,0,0,0.02);
-      --color-accent: #2D1B69;
-      --color-accent-light: #4A3A8A;
-      --color-mami-plus: #9333EA;
-      --color-mami-plus-bg: rgba(147,51,234,0.1);
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+      --color-text: rgba(40,40,40,0.8);
+      --color-text-light: rgba(80,80,80,0.6);
+      --color-muted: rgba(100,100,100,0.55);
+      --color-bg-alt: rgba(0,0,0,0.025);
+      --color-border: rgba(0,0,0,0.08);
+      --color-card-bg: rgba(0,0,0,0.015);
+      --color-accent: rgba(60,40,120,0.75);
+      --color-accent-light: rgba(80,60,150,0.7);
+      --color-mami-plus: rgba(130,50,220,0.7);
+      --color-mami-plus-bg: rgba(147,51,234,0.08);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.07);
     }
 
     * {
@@ -153,21 +153,7 @@ export function generateBaseCSS(): string {
     }
 
     .cta-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--color-accent);
-      color: #fff;
-      padding: 8px 20px;
-      border-radius: var(--border-radius-sm);
-      font-weight: 600;
-      font-size: 0.9rem;
-      text-decoration: none;
-      transition: background 0.2s;
-    }
-
-    .cta-link:hover {
-      background: var(--color-accent-light);
+      display: none;
     }
 
     .price-original {
@@ -253,9 +239,10 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://hi-mami
     var imgs=app.querySelectorAll("img[src]");
     for(var i=0;i<imgs.length;i++){
       var src=imgs[i].getAttribute("src");
-      if(src&&src.indexOf("hi-mami.com")!==-1&&src.indexOf(PROXY_BASE)===-1){
+      if(src&&(src.indexOf("http://")===0||src.indexOf("https://")===0)&&src.indexOf(PROXY_BASE)===-1){
         imgs[i].setAttribute("src",PROXY_BASE+encodeURIComponent(src));
       }
+      imgs[i].onerror=function(){this.style.display="none";};
     }
   }
 

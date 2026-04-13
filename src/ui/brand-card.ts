@@ -115,15 +115,7 @@ export const brandCSS = `
     flex-wrap: wrap;
   }
   .brand-link {
-    display: block;
-    text-align: center;
-    margin-top: 12px;
-    padding: 10px;
-    background: var(--color-accent);
-    color: #fff;
-    border-radius: var(--border-radius-sm);
-    font-weight: 600;
-    text-decoration: none;
+    display: none;
   }
 `;
 
@@ -213,9 +205,6 @@ export function renderBrandPageBody(page: BrandPage): string {
       <div class="brand-name">${b.title.text}</div>
       ${descHtml}
       ${dealsHtml}
-      <a class="brand-link" href="https://hi-mami.com/brands/${b.slug}" target="_blank" rel="noopener">
-        צפייה בכל המבצעים של ${b.title.text} ←
-      </a>
     </div>
   </div>`;
 
