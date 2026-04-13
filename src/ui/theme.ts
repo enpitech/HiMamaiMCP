@@ -80,17 +80,56 @@ export function generateBaseCSS(): string {
     }
 
     [data-theme="light"] {
-      --color-text: #333333;
-      --color-text-light: #555555;
-      --color-muted: #636363;
+      --color-text: #1F2937;
+      --color-text-light: #4B5563;
+      --color-muted: #6B7280;
       --color-accent: #880E4F;
-      --color-bg-alt: #F5F5F5;
-      --color-border: #EEEEEE;
+      --color-bg-alt: #F3F4F6;
+      --color-border: #D1D5DB;
       --color-card-bg: #FFFFFF;
-      --color-mami-plus: #E6A000;
-      --color-mami-plus-bg: rgba(255,179,0,0.08);
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-      --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
+      --color-success: #16A34A;
+      --color-warning: #D97706;
+      --color-danger: #DC2626;
+      --color-mami-plus: #B45309;
+      --color-mami-plus-bg: rgba(180,83,9,0.1);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    [data-theme="light"] .badge-gift {
+      color: #2563EB;
+    }
+
+    [data-theme="light"] .badge-discount {
+      background: rgba(22,163,74,0.1);
+    }
+
+    [data-theme="light"] .badge-ends-today {
+      background: rgba(220,38,38,0.1);
+    }
+
+    [data-theme="light"] .badge-ends-tomorrow {
+      background: rgba(217,119,6,0.1);
+    }
+
+    [data-theme="light"] .campaign-card,
+    [data-theme="light"] .product-card,
+    [data-theme="light"] .brand-card,
+    [data-theme="light"] .category-card,
+    [data-theme="light"] .home-card,
+    [data-theme="light"] .home-grid-item {
+      border: 1px solid var(--color-border);
+    }
+
+    [data-theme="light"] .brand-deal-item {
+      background: #F9FAFB;
+    }
+
+    [data-theme="light"] .deal-card:hover,
+    [data-theme="light"] .brand-row:hover,
+    [data-theme="light"] .brand-deal-item:hover,
+    [data-theme="light"] .category-item:hover {
+      background: #F3F4F6;
     }
 
     * {
@@ -341,17 +380,20 @@ export function generateBaseCSS(): string {
 
     @media (prefers-color-scheme: light) {
       :root:not([data-theme="dark"]) {
-        --color-text: #333333;
-        --color-text-light: #555555;
-        --color-muted: #636363;
+        --color-text: #1F2937;
+        --color-text-light: #4B5563;
+        --color-muted: #6B7280;
         --color-accent: #880E4F;
-        --color-bg-alt: #F5F5F5;
-        --color-border: #EEEEEE;
+        --color-bg-alt: #F3F4F6;
+        --color-border: #D1D5DB;
         --color-card-bg: #FFFFFF;
-        --color-mami-plus: #E6A000;
-        --color-mami-plus-bg: rgba(255,179,0,0.08);
-        --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
-        --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
+        --color-success: #16A34A;
+        --color-warning: #D97706;
+        --color-danger: #DC2626;
+        --color-mami-plus: #B45309;
+        --color-mami-plus-bg: rgba(180,83,9,0.1);
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+        --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
       }
     }
 
