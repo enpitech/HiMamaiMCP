@@ -58,6 +58,28 @@ export function generateBaseCSS(): string {
     :root {
       --color-primary: #E91E63;
       --color-primary-dark: #C2185B;
+      --color-accent: #880E4F;
+      --color-secondary: rgba(233,30,99,0.08);
+      --color-success: #16A34A;
+      --color-warning: #D97706;
+      --color-danger: #DC2626;
+      --color-muted: #6B7280;
+      --color-text: #1F2937;
+      --color-text-light: #4B5563;
+      --color-bg: transparent;
+      --color-bg-alt: #F3F4F6;
+      --color-border: #D1D5DB;
+      --color-card-bg: #FFFFFF;
+      --color-mami-plus: #B45309;
+      --color-mami-plus-bg: rgba(180,83,9,0.1);
+      --border-radius: 12px;
+      --border-radius-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+      --font-family: 'Noto Sans Hebrew', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    [data-theme="dark"] {
       --color-accent: #AD1457;
       --color-secondary: rgba(233,30,99,0.1);
       --color-success: #4ADE80;
@@ -66,70 +88,46 @@ export function generateBaseCSS(): string {
       --color-muted: rgba(180,180,180,0.85);
       --color-text: rgba(220,220,220,0.9);
       --color-text-light: rgba(190,190,190,0.9);
-      --color-bg: transparent;
       --color-bg-alt: rgba(128,128,128,0.06);
       --color-border: rgba(128,128,128,0.15);
       --color-card-bg: rgba(128,128,128,0.08);
       --color-mami-plus: #FFB300;
       --color-mami-plus-bg: rgba(255,179,0,0.12);
-      --border-radius: 12px;
-      --border-radius-sm: 8px;
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
       --shadow-md: 0 2px 8px rgba(0,0,0,0.12);
-      --font-family: 'Noto Sans Hebrew', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
-    [data-theme="light"] {
-      --color-text: #1F2937;
-      --color-text-light: #4B5563;
-      --color-muted: #6B7280;
-      --color-accent: #880E4F;
-      --color-bg-alt: #F3F4F6;
-      --color-border: #D1D5DB;
-      --color-card-bg: #FFFFFF;
-      --color-success: #16A34A;
-      --color-warning: #D97706;
-      --color-danger: #DC2626;
-      --color-mami-plus: #B45309;
-      --color-mami-plus-bg: rgba(180,83,9,0.1);
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-    }
-
-    [data-theme="light"] .badge-gift {
+    .badge-gift {
       color: #2563EB;
     }
+    [data-theme="dark"] .badge-gift {
+      color: #60A5FA;
+    }
 
-    [data-theme="light"] .badge-discount {
+    .badge-discount {
       background: rgba(22,163,74,0.1);
     }
-
-    [data-theme="light"] .badge-ends-today {
-      background: rgba(220,38,38,0.1);
+    [data-theme="dark"] .badge-discount {
+      background: rgba(74,222,128,0.15);
     }
 
-    [data-theme="light"] .badge-ends-tomorrow {
-      background: rgba(217,119,6,0.1);
-    }
-
-    [data-theme="light"] .campaign-card,
-    [data-theme="light"] .product-card,
-    [data-theme="light"] .brand-card,
-    [data-theme="light"] .category-card,
-    [data-theme="light"] .home-card,
-    [data-theme="light"] .home-grid-item {
+    .campaign-card, .product-card, .brand-card, .category-card, .home-card, .home-grid-item {
       border: 1px solid var(--color-border);
     }
-
-    [data-theme="light"] .brand-deal-item {
-      background: #F9FAFB;
+    [data-theme="dark"] .campaign-card,
+    [data-theme="dark"] .product-card,
+    [data-theme="dark"] .brand-card,
+    [data-theme="dark"] .category-card,
+    [data-theme="dark"] .home-card,
+    [data-theme="dark"] .home-grid-item {
+      border: none;
     }
 
-    [data-theme="light"] .deal-card:hover,
-    [data-theme="light"] .brand-row:hover,
-    [data-theme="light"] .brand-deal-item:hover,
-    [data-theme="light"] .category-item:hover {
-      background: #F3F4F6;
+    .brand-deal-item {
+      background: #F9FAFB;
+    }
+    [data-theme="dark"] .brand-deal-item {
+      background: var(--color-bg-alt);
     }
 
     * {
@@ -378,22 +376,23 @@ export function generateBaseCSS(): string {
       }
     }
 
-    @media (prefers-color-scheme: light) {
-      :root:not([data-theme="dark"]) {
-        --color-text: #1F2937;
-        --color-text-light: #4B5563;
-        --color-muted: #6B7280;
-        --color-accent: #880E4F;
-        --color-bg-alt: #F3F4F6;
-        --color-border: #D1D5DB;
-        --color-card-bg: #FFFFFF;
-        --color-success: #16A34A;
-        --color-warning: #D97706;
-        --color-danger: #DC2626;
-        --color-mami-plus: #B45309;
-        --color-mami-plus-bg: rgba(180,83,9,0.1);
-        --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-        --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --color-accent: #AD1457;
+        --color-secondary: rgba(233,30,99,0.1);
+        --color-success: #4ADE80;
+        --color-warning: #FBBF24;
+        --color-danger: #F87171;
+        --color-muted: rgba(180,180,180,0.85);
+        --color-text: rgba(220,220,220,0.9);
+        --color-text-light: rgba(190,190,190,0.9);
+        --color-bg-alt: rgba(128,128,128,0.06);
+        --color-border: rgba(128,128,128,0.15);
+        --color-card-bg: rgba(128,128,128,0.08);
+        --color-mami-plus: #FFB300;
+        --color-mami-plus-bg: rgba(255,179,0,0.12);
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
+        --shadow-md: 0 2px 8px rgba(0,0,0,0.12);
       }
     }
 
