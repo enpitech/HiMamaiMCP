@@ -115,7 +115,13 @@ function withToolLogging<TArgs, TResult>(
 
 /** Create a fully configured McpServer with all tools and resources registered. */
 export function createMcpServer(api: HiMamiApiClient): McpServer {
-  const server = new McpServer({ name: 'himami', version: '1.0.0' });
+  const server = new McpServer({
+    name: 'himami',
+    version: '1.0.0',
+    title: 'Hi Mami - הטבות ומבצעים',
+    description: 'Search deals, discounts, and offers on the Hi Mami platform',
+    icons: [{ src: 'https://www.hi-mami.com/images/mami_logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] }],
+  });
   registerTools(server, api);
   return server;
 }

@@ -29,7 +29,13 @@ async function handleMcpRequest(
   res: Response,
   apiClient: HiMamiApiClient,
 ): Promise<void> {
-  const server = new McpServer({ name: 'himami', version: '1.0.0' });
+  const server = new McpServer({
+      name: 'himami',
+      version: '1.0.0',
+      title: 'Hi Mami - הטבות ומבצעים',
+      description: 'Search deals, discounts, and offers on the Hi Mami platform',
+      icons: [{ src: 'https://www.hi-mami.com/images/mami_logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] }],
+    });
   registerTools(server, apiClient);
 
   const transport = new StreamableHTTPServerTransport({
@@ -73,7 +79,13 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
 
   // SSE endpoint — GET (ChatGPT Connectors: establishes SSE stream)
   router.get('/mcp/sse', (req, res) => {
-    const server = new McpServer({ name: 'himami', version: '1.0.0' });
+    const server = new McpServer({
+      name: 'himami',
+      version: '1.0.0',
+      title: 'Hi Mami - הטבות ומבצעים',
+      description: 'Search deals, discounts, and offers on the Hi Mami platform',
+      icons: [{ src: 'https://www.hi-mami.com/images/mami_logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] }],
+    });
     registerTools(server, apiClient);
 
     const transport = new SSEServerTransport('/mcp/sse', res);
