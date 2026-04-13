@@ -1,5 +1,5 @@
 import type { CategoryPage, CollectionItem, CampaignDetails, ProductDetails, BrandMetadata } from '../types/index.js';
-import { wrapInHtmlDoc } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl } from './theme.js';
 
 export const categoryCSS = `
   .category-card {
@@ -53,7 +53,7 @@ export const categoryCSS = `
   .category-section-title {
     font-size: 0.95rem;
     font-weight: 700;
-    color: var(--color-accent);
+    color: var(--color-primary);
     margin-bottom: 8px;
     display: flex;
     align-items: center;
@@ -96,8 +96,12 @@ export const categoryCSS = `
     display: inline-block;
     margin-top: 6px;
     font-size: 0.85rem;
-    color: var(--color-accent);
+    color: var(--color-primary);
     font-weight: 600;
+  }
+  .category-item-link {
+    flex-shrink: 0;
+    font-size: 0.8rem;
   }
 `;
 
@@ -105,15 +109,17 @@ function renderCollectionItem(item: CollectionItem): string {
   let title = '';
   let imgUrl: string | null = null;
   let meta = '';
+  let entityUrl: string | null = null;
 
   switch (item.type) {
     case 'CAMPAIGN_DETAILS': {
       const c = item.data as CampaignDetails;
       title = c.title.text;
       imgUrl = c.mainMedia?.url ?? null;
+      entityUrl = hiMamiUrl('campaign', c.id);
       const parts: string[] = [];
       if (c.discountPercentage) parts.push(`${c.discountPercentage}% הנחה`);
-      if (c.tierType === 'MAMI_PLUS') parts.push('⭐ מאמי+');
+      if (c.tierType === 'MAMI_PLUS') parts.push('מאמי+');
       meta = parts.join(' · ');
       break;
     }
@@ -121,6 +127,7 @@ function renderCollectionItem(item: CollectionItem): string {
       const p = item.data as ProductDetails;
       title = p.title.text;
       imgUrl = p.mainMedia?.url ?? null;
+      entityUrl = hiMamiUrl('product', p.id);
       if (p.price) meta = `₪${p.price.discountedPrice} (${p.price.discountPercent}% הנחה)`;
       break;
     }
@@ -128,6 +135,7 @@ function renderCollectionItem(item: CollectionItem): string {
       const b = item.data as BrandMetadata;
       title = b.title.text;
       imgUrl = b.logo?.url ?? null;
+      entityUrl = hiMamiUrl('brand', b.slug);
       break;
     }
     default:
@@ -138,12 +146,17 @@ function renderCollectionItem(item: CollectionItem): string {
     ? `<img class="category-item-img" src="${imgUrl}" alt="${title}">`
     : '';
 
+  const linkHtml = entityUrl
+    ? `<a class="entity-link category-item-link" href="${entityUrl}" target="_blank" rel="noopener">לפרטים</a>`
+    : '';
+
   return `<div class="category-item">
     ${imgHtml}
     <div class="category-item-info">
       <div class="category-item-title">${title}</div>
       ${meta ? `<div class="category-item-meta">${meta}</div>` : ''}
     </div>
+    ${linkHtml}
   </div>`;
 }
 

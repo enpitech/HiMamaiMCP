@@ -1,5 +1,5 @@
 import type { BrandPage, CollectionItem, CampaignDetails, ProductDetails } from '../types/index.js';
-import { wrapInHtmlDoc } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl } from './theme.js';
 
 export const brandCSS = `
   .brand-card {
@@ -57,14 +57,22 @@ export const brandCSS = `
     margin-bottom: 16px;
     line-height: 1.5;
   }
+  .brand-name a {
+    color: inherit;
+    text-decoration: none;
+  }
   .brand-deals-header {
     font-size: 0.95rem;
     font-weight: 700;
-    color: var(--color-accent);
+    color: var(--color-primary);
     margin-bottom: 10px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: space-between;
+  }
+  .brand-deals-see-all {
+    font-size: 0.8rem;
+    font-weight: 600;
   }
   .brand-deal-item {
     display: flex;
@@ -114,8 +122,9 @@ export const brandCSS = `
     gap: 6px;
     flex-wrap: wrap;
   }
-  .brand-link {
-    display: none;
+  .brand-deal-link {
+    flex-shrink: 0;
+    font-size: 0.8rem;
   }
 `;
 
@@ -138,6 +147,7 @@ function extractDeals(sections: { items: Array<{ items: { items: CollectionItem[
 
 export function renderBrandPageBody(page: BrandPage): string {
   const b = page.brandMetadata;
+  const brandUrl = hiMamiUrl('brand', b.slug);
 
   const heroHtml = b.mainMedia?.url
     ? `<img class="brand-hero-img" src="${b.mainMedia.url}" alt="${b.title.text}">`
@@ -160,13 +170,15 @@ export function renderBrandPageBody(page: BrandPage): string {
     const rows = visibleDeals.map((deal) => {
       const title = deal.data.title.text;
       const imgUrl = deal.data.mainMedia?.url;
+      const dealId = deal.data.id;
+      const dealUrl = hiMamiUrl(deal.type === 'campaign' ? 'campaign' : 'product', dealId);
       const meta: string[] = [];
 
       if (deal.type === 'campaign') {
         const c = deal.data as CampaignDetails;
         if (c.discountPercentage) meta.push(`${c.discountPercentage}% הנחה`);
         if (c.campaignTypeLabel === 'GIFT') meta.push('🎁 מתנה');
-        if (c.tierType === 'MAMI_PLUS') meta.push('⭐ מאמי+');
+        if (c.tierType === 'MAMI_PLUS') meta.push('מאמי+');
       } else {
         const p = deal.data as ProductDetails;
         if (p.price) meta.push(`₪${p.price.discountedPrice}`);
@@ -175,7 +187,7 @@ export function renderBrandPageBody(page: BrandPage): string {
 
       const imgHtml = imgUrl
         ? `<img class="brand-deal-img" src="${imgUrl}" alt="${title}">`
-        : `<div class="brand-deal-img-placeholder">${deal.type === 'campaign' ? '🎯' : '📦'}</div>`;
+        : `<div class="brand-deal-img-placeholder"></div>`;
 
       return `<div class="brand-deal-item">
         ${imgHtml}
@@ -183,16 +195,15 @@ export function renderBrandPageBody(page: BrandPage): string {
           <div class="brand-deal-title">${title}</div>
           ${meta.length > 0 ? `<div class="brand-deal-meta">${meta.map((m) => `<span>${m}</span>`).join('')}</div>` : ''}
         </div>
+        <a class="entity-link brand-deal-link" href="${dealUrl}" target="_blank" rel="noopener">לפרטים</a>
       </div>`;
     }).join('');
 
-    const moreCount = deals.length - maxDeals;
-    const moreHtml = moreCount > 0 ? `<div style="text-align:center;font-size:0.85rem;color:var(--color-muted);margin-top:8px">+ ${moreCount} הטבות נוספות</div>` : '';
+    const seeAllHtml = `<a class="entity-link brand-deals-see-all" href="${brandUrl}" target="_blank" rel="noopener">עוד ←</a>`;
 
     dealsHtml = `
-      <div class="brand-deals-header">🎯 מבצעים והטבות פעילים (${deals.length})</div>
+      <div class="brand-deals-header"><span>מבצעים והטבות (${deals.length})</span>${seeAllHtml}</div>
       ${rows}
-      ${moreHtml}
     `;
   }
 
@@ -202,7 +213,7 @@ export function renderBrandPageBody(page: BrandPage): string {
       ${logoHtml}
     </div>
     <div class="brand-body">
-      <div class="brand-name">${b.title.text}</div>
+      <div class="brand-name"><a href="${brandUrl}" target="_blank" rel="noopener">${b.title.text}</a></div>
       ${descHtml}
       ${dealsHtml}
     </div>

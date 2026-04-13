@@ -1,49 +1,66 @@
 /**
  * CSS custom properties and base styles for HiMami MCP UI cards.
- * Uses a neutral mid-tone palette that works on both light and dark backgrounds.
+ * Brand colors from hi-mami.com: primary pink #E91E63.
+ * Adaptive theme system — dark mode default, light override via [data-theme="light"].
  * All cards use RTL direction for Hebrew content.
  */
+
+export const HIMAMI_BASE_URL = 'https://hi-mami.com';
+
+export function hiMamiUrl(type: 'brand' | 'campaign' | 'product' | 'category', id: string): string {
+  switch (type) {
+    case 'brand': return `${HIMAMI_BASE_URL}/brands/${id}`;
+    case 'campaign': return `${HIMAMI_BASE_URL}/campaigns/${id}`;
+    case 'product': return `${HIMAMI_BASE_URL}/products/${id}`;
+    case 'category': return `${HIMAMI_BASE_URL}/categories/${id}`;
+  }
+}
+
+export function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
+  } catch {
+    return iso;
+  }
+}
 
 export function generateBaseCSS(): string {
   return `
     :root {
-      --color-primary: rgba(255,107,157,0.8);
-      --color-primary-dark: rgba(232,85,136,0.75);
-      --color-secondary: rgba(255,107,157,0.08);
-      --color-accent: rgba(124,107,196,0.75);
-      --color-accent-light: rgba(155,143,216,0.7);
+      --color-primary: #E91E63;
+      --color-primary-dark: #C2185B;
+      --color-secondary: rgba(233,30,99,0.1);
       --color-success: #4ADE80;
       --color-warning: #FBBF24;
       --color-danger: #F87171;
       --color-muted: rgba(160,160,160,0.65);
-      --color-text: rgba(200,200,200,0.85);
+      --color-text: rgba(220,220,220,0.9);
       --color-text-light: rgba(160,160,160,0.7);
       --color-bg: transparent;
-      --color-bg-alt: rgba(128,128,128,0.05);
-      --color-border: rgba(128,128,128,0.12);
-      --color-card-bg: rgba(128,128,128,0.04);
-      --color-mami-plus: #A78BFA;
-      --color-mami-plus-bg: rgba(167,139,250,0.15);
+      --color-bg-alt: rgba(128,128,128,0.06);
+      --color-border: rgba(128,128,128,0.15);
+      --color-card-bg: rgba(128,128,128,0.05);
+      --color-mami-plus: #FFB300;
+      --color-mami-plus-bg: rgba(255,179,0,0.12);
       --border-radius: 12px;
       --border-radius-sm: 8px;
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
-      --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
-      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.12);
+      --font-family: 'Noto Sans Hebrew', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
     [data-theme="light"] {
-      --color-text: rgba(40,40,40,0.8);
-      --color-text-light: rgba(80,80,80,0.6);
-      --color-muted: rgba(100,100,100,0.55);
-      --color-bg-alt: rgba(0,0,0,0.025);
-      --color-border: rgba(0,0,0,0.08);
-      --color-card-bg: rgba(0,0,0,0.015);
-      --color-accent: rgba(60,40,120,0.75);
-      --color-accent-light: rgba(80,60,150,0.7);
-      --color-mami-plus: rgba(130,50,220,0.7);
-      --color-mami-plus-bg: rgba(147,51,234,0.08);
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.07);
+      --color-text: #333333;
+      --color-text-light: #666666;
+      --color-muted: #888888;
+      --color-bg-alt: #F5F5F5;
+      --color-border: #EEEEEE;
+      --color-card-bg: #FFFFFF;
+      --color-mami-plus: #E6A000;
+      --color-mami-plus-bg: rgba(255,179,0,0.08);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
     }
 
     * {
@@ -75,7 +92,7 @@ export function generateBaseCSS(): string {
     }
 
     a {
-      color: var(--color-accent-light);
+      color: var(--color-primary);
       text-decoration: none;
     }
 
@@ -98,11 +115,13 @@ export function generateBaseCSS(): string {
     .badge-mami-plus {
       background: var(--color-mami-plus-bg);
       color: var(--color-mami-plus);
+      font-weight: 700;
     }
 
     .badge-exclusive {
-      background: rgba(251,191,36,0.15);
-      color: var(--color-warning);
+      background: rgba(233,30,99,0.12);
+      color: var(--color-primary);
+      font-weight: 700;
     }
 
     .badge-ends-today {
@@ -126,8 +145,8 @@ export function generateBaseCSS(): string {
     }
 
     .badge-offer {
-      background: rgba(124,107,196,0.15);
-      color: var(--color-accent-light);
+      background: rgba(233,30,99,0.08);
+      color: var(--color-primary);
     }
 
     .cta-box {
@@ -142,8 +161,8 @@ export function generateBaseCSS(): string {
       font-family: 'Courier New', monospace;
       font-size: 1.1rem;
       font-weight: 700;
-      color: var(--color-accent-light);
-      background: rgba(124,107,196,0.15);
+      color: var(--color-primary);
+      background: var(--color-secondary);
       padding: 6px 12px;
       border-radius: 6px;
       display: inline-block;
@@ -152,8 +171,30 @@ export function generateBaseCSS(): string {
       letter-spacing: 1px;
     }
 
-    .cta-link {
-      display: none;
+    .entity-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--color-primary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-decoration: none;
+    }
+
+    .entity-link:hover {
+      text-decoration: underline;
+    }
+
+    .cta-action-link {
+      display: inline-block;
+      background: var(--color-primary);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      text-align: center;
     }
 
     .price-original {
@@ -178,6 +219,18 @@ export function generateBaseCSS(): string {
       font-weight: 700;
       color: var(--color-text);
       margin-bottom: 8px;
+    }
+
+    .validity-overlay {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 500;
     }
 
     .card-divider {

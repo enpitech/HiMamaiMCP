@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { z } from 'zod';
 
 const configSchema = z.object({
-  HIMAMI_API_BASE_URL: z.string().min(1).default('https://hi-mami.com/api'),
+  HIMAMI_API_BASE_URL: z.string().min(1).default('https://dev.hi-mami.com/api'),
   HIMAMI_USER_AGENT: z.string().min(1).default('HiMamiMCP/1.0'),
   MCP_PUBLIC_URL: z.string().min(1).default('https://hi-mami-mcp.vercel.app'),
   PORT: z.coerce.number().default(3000),

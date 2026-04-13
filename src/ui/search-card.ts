@@ -1,5 +1,6 @@
 import type { SearchResults } from '../types/index.js';
-import { wrapInHtmlDoc } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, formatDate } from './theme.js';
+import { getTierBadge } from './campaign-card.js';
 
 export const searchCSS = `
   .search-header {
@@ -32,6 +33,10 @@ export const searchCSS = `
   .deal-card:last-child {
     border-bottom: none;
   }
+  .deal-hero-wrap {
+    position: relative;
+    overflow: hidden;
+  }
   .deal-hero {
     width: 100%;
     max-height: 180px;
@@ -40,6 +45,10 @@ export const searchCSS = `
   }
   .deal-body {
     padding: 12px 16px;
+  }
+  .deal-footer-link {
+    margin-top: 8px;
+    text-align: left;
   }
   .deal-brand {
     font-size: 0.75rem;
@@ -136,42 +145,40 @@ function extractDescription(item: Record<string, unknown>): string | null {
   return desc?.value?.text ?? null;
 }
 
-function formatDate(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
-  } catch {
-    return iso;
-  }
-}
-
 function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'product'): string {
   const title = extractTitle(item);
   const imgUrl = extractImage(item);
   const description = extractDescription(item);
+  const id = item.id as string | undefined;
+  const expirationDate = item.expirationDate as string | undefined;
+  const expirationTag = item.expirationTag as string | undefined;
 
-  const heroHtml = imgUrl
-    ? `<img class="deal-hero" src="${imgUrl}" alt="${title}">`
-    : '';
+  // Image with validity overlay
+  let heroHtml = '';
+  if (imgUrl) {
+    const overlayHtml = expirationDate && expirationTag !== 'ENDED'
+      ? `<span class="validity-overlay">בתוקף עד ${formatDate(expirationDate)}</span>`
+      : '';
+    heroHtml = `<div class="deal-hero-wrap"><img class="deal-hero" src="${imgUrl}" alt="${title}">${overlayHtml}</div>`;
+  }
 
-  // Badges
+  // Badges — max 2 to keep it clean
   const badges: string[] = [];
   const discountPct = item.discountPercentage as number | undefined;
   const tierType = item.tierType as string | undefined;
-  const expirationTag = item.expirationTag as string | undefined;
   const campaignTypeLabel = item.campaignTypeLabel as string | undefined;
+  const price = item.price as { discountedPrice?: number; currency?: string; discountPercent?: number } | undefined;
 
   if (discountPct) {
     badges.push(`<span class="badge badge-discount">${discountPct}% הנחה</span>`);
+  } else if (price?.discountPercent) {
+    badges.push(`<span class="badge badge-discount">${price.discountPercent}% הנחה</span>`);
   } else if (campaignTypeLabel === 'GIFT') {
     badges.push(`<span class="badge badge-gift">🎁 מתנה</span>`);
   }
 
-  if (tierType === 'MAMI_PLUS') {
-    badges.push(`<span class="badge badge-mami-plus">⭐ מאמי פלוס</span>`);
-  } else if (tierType === 'MAMI_PLUS_EXCLUSIVE') {
-    badges.push(`<span class="badge badge-exclusive">👑 בלעדי למאמי פלוס</span>`);
-  }
+  const tierBadge = getTierBadge((tierType ?? 'STANDARD') as 'STANDARD' | 'MAMI_PLUS' | 'MAMI_PLUS_EXCLUSIVE');
+  if (tierBadge) badges.push(tierBadge);
 
   if (expirationTag === 'ENDS_TODAY') {
     badges.push(`<span class="badge badge-ends-today">⏰ מסתיים היום!</span>`);
@@ -179,40 +186,39 @@ function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'produ
     badges.push(`<span class="badge badge-ends-tomorrow">⏰ מסתיים מחר</span>`);
   }
 
-  // Price (products)
-  const price = item.price as { discountedPrice?: number; currency?: string; discountPercent?: number } | undefined;
+  // Price
+  const brandSlug = item.brandSlug as string | undefined;
   let priceHtml = '';
-  if (price) {
+  if (price?.discountedPrice) {
     priceHtml = `<span class="price-discounted">${price.discountedPrice} ${price.currency ?? '₪'}</span>`;
-    if (price.discountPercent) {
-      badges.push(`<span class="badge badge-discount">${price.discountPercent}% הנחה</span>`);
-    }
   }
 
-  // Brand info
-  const brandSlug = item.brandSlug as string | undefined;
-  const brandName = brandSlug ?? '';
+  // Footer with price + link
+  const entityUrl = id ? hiMamiUrl(type, id) : null;
+  const linkHtml = entityUrl
+    ? `<div class="deal-footer-link"><a class="entity-link" href="${entityUrl}" target="_blank" rel="noopener">לפרטים ←</a></div>`
+    : '';
 
-  // Expiration
-  const expirationDate = item.expirationDate as string | undefined;
-  const footerHtml = expirationDate
-    ? `<div class="deal-footer"><span>📅 עד ${formatDate(expirationDate)}</span>${priceHtml}</div>`
-    : priceHtml ? `<div class="deal-footer"><span></span>${priceHtml}</div>` : '';
+  const footerHtml = priceHtml
+    ? `<div class="deal-footer"><span></span>${priceHtml}</div>`
+    : '';
 
   return `<div class="deal-card">
     ${heroHtml}
     <div class="deal-body">
-      ${brandName ? `<div class="deal-brand">${brandName}</div>` : ''}
+      ${brandSlug ? `<div class="deal-brand">${brandSlug}</div>` : ''}
       ${badges.length > 0 ? `<div class="deal-badges">${badges.join('')}</div>` : ''}
       <div class="deal-title">${title}</div>
       ${description ? `<div class="deal-description">${description}</div>` : ''}
       ${footerHtml}
+      ${linkHtml}
     </div>
   </div>`;
 }
 
 function renderBrandRow(item: Record<string, unknown>): string {
   const title = extractTitle(item);
+  const slug = item.slug as string | undefined;
   const logoUrl = (item.logo as { url?: string } | undefined)?.url;
   const description = extractDescription(item);
 
@@ -220,12 +226,15 @@ function renderBrandRow(item: Record<string, unknown>): string {
     ? `<img class="brand-row-logo" src="${logoUrl}" alt="${title}">`
     : '';
 
+  const brandUrl = slug ? hiMamiUrl('brand', slug) : null;
+
   return `<div class="brand-row">
     ${logoHtml}
     <div class="brand-row-info">
       <div class="brand-row-name">${title}</div>
       ${description ? `<div class="brand-row-desc">${description}</div>` : ''}
     </div>
+    ${brandUrl ? `<a class="entity-link" href="${brandUrl}" target="_blank" rel="noopener">←</a>` : ''}
   </div>`;
 }
 

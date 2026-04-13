@@ -1,9 +1,9 @@
 import type { HomePage, CollectionItem, CampaignDetails, ProductDetails, BrandMetadata } from '../types/index.js';
-import { wrapInHtmlDoc } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, HIMAMI_BASE_URL } from './theme.js';
 
 export const homeCSS = `
   .home-card {
-    max-width: 480px;
+    width: 100%;
     background: var(--color-bg);
     border-radius: var(--border-radius);
     overflow: hidden;
@@ -98,7 +98,7 @@ export const homeCSS = `
   }
   .home-section-see-all {
     font-size: 0.8rem;
-    color: var(--color-accent);
+    color: var(--color-primary);
     font-weight: 600;
   }
   .home-items-grid {
@@ -163,16 +163,18 @@ export function renderHomePageBody(page: HomePage): string {
     const imgHtml = hero.media?.url
       ? `<img src="${hero.media.url}" alt="">`
       : '';
-    heroHtml = `<div class="home-hero">
-      ${imgHtml}
+    const heroLink = hero.targetUrl;
+    const heroContent = `${imgHtml}
       <div class="home-hero-overlay">
-        <div class="home-hero-title">🛍️ היי מאמי</div>
+        <div class="home-hero-title">היי מאמי</div>
         <div class="home-hero-subtitle">ההטבות הכי שוות</div>
-      </div>
-    </div>`;
+      </div>`;
+    heroHtml = heroLink
+      ? `<a href="${heroLink}" target="_blank" rel="noopener" style="display:block"><div class="home-hero">${heroContent}</div></a>`
+      : `<div class="home-hero">${heroContent}</div>`;
   } else {
     heroHtml = `<div class="home-welcome">
-      <h2>🛍️ היי מאמי</h2>
+      <h2>היי מאמי</h2>
       <p>ההטבות הכי שוות במקום אחד</p>
     </div>`;
   }
@@ -207,6 +209,7 @@ export function renderHomePageBody(page: HomePage): string {
       let title = '';
       let imgUrl: string | null = null;
       let discount: number | null = null;
+      let entityUrl: string | null = null;
 
       switch (item.type) {
         case 'CAMPAIGN_DETAILS': {
@@ -214,6 +217,7 @@ export function renderHomePageBody(page: HomePage): string {
           title = c.title.text;
           imgUrl = c.mainMedia?.url ?? null;
           discount = c.discountPercentage;
+          entityUrl = hiMamiUrl('campaign', c.id);
           break;
         }
         case 'PRODUCT_DETAILS': {
@@ -221,12 +225,14 @@ export function renderHomePageBody(page: HomePage): string {
           title = p.title.text;
           imgUrl = p.mainMedia?.url ?? null;
           discount = p.price?.discountPercent ?? null;
+          entityUrl = hiMamiUrl('product', p.id);
           break;
         }
         case 'BRAND_METADATA': {
           const b = item.data as BrandMetadata;
           title = b.title.text;
           imgUrl = b.logo?.url ?? b.mainMedia?.url ?? null;
+          entityUrl = hiMamiUrl('brand', b.slug);
           break;
         }
         default: {
@@ -234,17 +240,19 @@ export function renderHomePageBody(page: HomePage): string {
         }
       }
 
-      return `<div class="home-grid-item">
-        ${imgUrl ? `<img src="${imgUrl}" alt="${title}">` : ''}
+      const cardContent = `${imgUrl ? `<img src="${imgUrl}" alt="${title}">` : ''}
         <div class="home-grid-item-body">
           <div class="home-grid-item-title">${title}</div>
           ${discount ? `<div class="home-grid-item-meta">${discount}% הנחה</div>` : ''}
-        </div>
-      </div>`;
+        </div>`;
+
+      return entityUrl
+        ? `<a class="home-grid-item" href="${entityUrl}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">${cardContent}</a>`
+        : `<div class="home-grid-item">${cardContent}</div>`;
     }).join('');
 
     const seeAllHtml = section.seeAll
-      ? `<a class="home-section-see-all" href="https://hi-mami.com${section.seeAll.path}" target="_blank" rel="noopener">${section.seeAll.text} ←</a>`
+      ? `<a class="home-section-see-all" href="${HIMAMI_BASE_URL}${section.seeAll.path}" target="_blank" rel="noopener">${section.seeAll.text} ←</a>`
       : '';
 
     sectionsHtml += `<div class="home-section">

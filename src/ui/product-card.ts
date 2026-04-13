@@ -1,5 +1,6 @@
 import type { ProductPage } from '../types/index.js';
-import { wrapInHtmlDoc } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, formatDate } from './theme.js';
+import { getTierBadge, renderConversionAction } from './campaign-card.js';
 
 export const productCSS = `
   .product-card {
@@ -8,6 +9,10 @@ export const productCSS = `
     border-radius: var(--border-radius);
     overflow: hidden;
     box-shadow: var(--shadow-md);
+  }
+  .product-hero-wrap {
+    position: relative;
+    overflow: hidden;
   }
   .product-hero {
     width: 100%;
@@ -22,6 +27,13 @@ export const productCSS = `
     font-size: 0.85rem;
     color: var(--color-muted);
     margin-bottom: 4px;
+  }
+  .product-brand a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .product-brand a:hover {
+    color: var(--color-primary);
   }
   .product-title {
     font-size: 1.15rem;
@@ -77,16 +89,11 @@ export const productCSS = `
     border-radius: 12px;
     font-size: 0.75rem;
   }
-`;
-
-function formatDate(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
-  } catch {
-    return iso;
+  .product-footer-link {
+    margin-top: 12px;
+    text-align: left;
   }
-}
+`;
 
 function formatCurrency(amount: number, currency: string): string {
   if (currency === 'ILS') return `₪${amount.toFixed(2)}`;
@@ -97,9 +104,17 @@ export function renderProductDetailBody(page: ProductPage): string {
   const p = page.productDetails;
   const brand = page.brandMetadata;
 
-  const heroHtml = p.mainMedia?.url
-    ? `<img class="product-hero" src="${p.mainMedia.url}" alt="${p.title.text}">`
-    : '';
+  const brandUrl = hiMamiUrl('brand', brand.slug);
+  const productUrl = hiMamiUrl('product', p.id);
+
+  // Hero image with validity overlay
+  let heroHtml = '';
+  if (p.mainMedia?.url) {
+    const overlayHtml = p.expirationTag !== 'ENDED'
+      ? `<span class="validity-overlay">בתוקף עד ${formatDate(p.expirationDate)}</span>`
+      : '';
+    heroHtml = `<div class="product-hero-wrap"><img class="product-hero" src="${p.mainMedia.url}" alt="${p.title.text}">${overlayHtml}</div>`;
+  }
 
   // Price section
   let priceHtml = '';
@@ -114,67 +129,20 @@ export function renderProductDetailBody(page: ProductPage): string {
     </div>`;
   }
 
-  // Badges
-  const badges: string[] = [];
-  if (p.price?.discountPercent) {
-    badges.push(`<span class="badge badge-discount">${p.price.discountPercent}% הנחה</span>`);
-  }
-  if (p.tierType === 'MAMI_PLUS') {
-    badges.push(`<span class="badge badge-mami-plus">⭐ מאמי פלוס</span>`);
-  } else if (p.tierType === 'MAMI_PLUS_EXCLUSIVE') {
-    badges.push(`<span class="badge badge-exclusive">👑 בלעדי למאמי פלוס</span>`);
-  }
-  if (p.expirationTag === 'ENDS_TODAY') {
-    badges.push(`<span class="badge badge-ends-today">⏰ מסתיים היום!</span>`);
-  } else if (p.expirationTag === 'ENDS_TOMORROW') {
-    badges.push(`<span class="badge badge-ends-tomorrow">⏰ מסתיים מחר</span>`);
-  }
+  // Badges — reuse shared helpers
+  const badges = [
+    p.price?.discountPercent ? `<span class="badge badge-discount">${p.price.discountPercent}% הנחה</span>` : '',
+    getTierBadge(p.tierType),
+    p.expirationTag === 'ENDS_TODAY' ? `<span class="badge badge-ends-today">⏰ מסתיים היום!</span>` : '',
+    p.expirationTag === 'ENDS_TOMORROW' ? `<span class="badge badge-ends-tomorrow">⏰ מסתיים מחר</span>` : '',
+  ].filter(Boolean);
 
   // Description
   const desc = p.displayStrings.find((d) => d.type === 'DESCRIPTION' || d.type === 'SUBTITLE');
   const descHtml = desc ? `<div class="product-description">${desc.value.text}</div>` : '';
 
-  // CTA
-  let ctaHtml = '';
-  if (p.conversionAction) {
-    const action = p.conversionAction;
-    switch (action.type) {
-      case 'GENERIC_CODE':
-      case 'PERSONAL_CODE': {
-        const data = action.data as { codes?: Array<{ code: string }>; url?: string } | null;
-        if (data?.codes && data.codes.length > 0) {
-          ctaHtml = `<div class="cta-box">
-            <div class="cta-label">קוד:</div>
-            ${data.codes.map((c) => `<span class="cta-code">${c.code}</span>`).join(' ')}
-          </div>`;
-        }
-        break;
-      }
-      case 'LEADING_LINK':
-      case 'PURCHASE_LINK':
-      case 'PERSONAL_LINK': {
-        ctaHtml = `<div class="cta-box"><div class="cta-label">🔗 ניתן למימוש דרך הלינק (ראה פרטים למטה)</div></div>`;
-        break;
-      }
-      case 'CALL_TO_NUMBER': {
-        const data = action.data as { phoneNumber?: string } | null;
-        if (data?.phoneNumber) {
-          ctaHtml = `<div class="cta-box"><div class="cta-label">📞 טלפון: <span class="ltr-inline">${data.phoneNumber}</span></div></div>`;
-        }
-        break;
-      }
-      case 'VOUCHER': {
-        const data = action.data as { code?: string } | null;
-        if (data?.code) {
-          ctaHtml = `<div class="cta-box"><div class="cta-label">שובר:</div><span class="cta-code">${data.code}</span></div>`;
-        }
-        break;
-      }
-      case 'OUT_OF_STOCK':
-        ctaHtml = `<div class="cta-box"><div style="color:var(--color-danger);font-weight:600">⚠️ אזל מהמלאי</div></div>`;
-        break;
-    }
-  }
+  // CTA — reuse shared renderer
+  const ctaHtml = p.conversionAction ? renderConversionAction(p.conversionAction) : '';
 
   // Tags
   const tagsHtml = p.tagKeys.length > 0
@@ -184,7 +152,7 @@ export function renderProductDetailBody(page: ProductPage): string {
   const body = `<div class="product-card">
     ${heroHtml}
     <div class="product-body">
-      <div class="product-brand">${brand.title.text}</div>
+      <div class="product-brand"><a href="${brandUrl}" target="_blank" rel="noopener">${brand.title.text}</a></div>
       <div class="product-title">${p.title.text}</div>
       <div class="product-badges">${badges.join('')}</div>
       ${priceHtml}
@@ -192,8 +160,9 @@ export function renderProductDetailBody(page: ProductPage): string {
       ${ctaHtml}
       ${tagsHtml}
       <div class="product-meta">
-        <span>📅 בתוקף עד ${formatDate(p.expirationDate)}</span>
+        <span>בתוקף עד ${formatDate(p.expirationDate)}</span>
       </div>
+      <div class="product-footer-link"><a class="entity-link" href="${productUrl}" target="_blank" rel="noopener">צפייה באתר ←</a></div>
     </div>
   </div>`;
 

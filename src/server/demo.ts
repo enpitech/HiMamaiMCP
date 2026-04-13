@@ -183,7 +183,7 @@ const DEMO_SHELL = `<!DOCTYPE html>
       grid.innerHTML = WIDGETS.map(w => 
         '<div class="widget-section" id="section-' + w.id + '">' +
           '<div class="widget-label">' + w.label + ' <span class="status" id="status-' + w.id + '">loading...</span></div>' +
-          '<iframe class="widget-frame" id="frame-' + w.id + '" sandbox="allow-scripts allow-same-origin"></iframe>' +
+          '<iframe class="widget-frame" id="frame-' + w.id + '" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"></iframe>' +
         '</div>'
       ).join('');
     }

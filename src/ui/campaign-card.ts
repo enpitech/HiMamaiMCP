@@ -1,5 +1,5 @@
 import type { CampaignPage, ConversionAction, DisplayString, ExpirationTag, TierType, CampaignTypeLabel } from '../types/index.js';
-import { wrapInHtmlDoc } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, formatDate } from './theme.js';
 
 export const campaignCSS = `
   .campaign-card {
@@ -28,6 +28,17 @@ export const campaignCSS = `
     font-weight: 600;
     font-size: 0.95rem;
     color: var(--color-text);
+  }
+  .campaign-brand-name a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .campaign-brand-name a:hover {
+    color: var(--color-primary);
+  }
+  .campaign-hero-wrap {
+    position: relative;
+    overflow: hidden;
   }
   .campaign-hero {
     width: 100%;
@@ -71,6 +82,10 @@ export const campaignCSS = `
     align-items: center;
     gap: 4px;
   }
+  .campaign-footer-link {
+    margin-top: 12px;
+    text-align: left;
+  }
   .cta-section {
     margin-top: 14px;
   }
@@ -89,7 +104,7 @@ export const campaignCSS = `
   }
 `;
 
-function getExpirationBadge(tag: ExpirationTag, date: string): string {
+export function getExpirationBadge(tag: ExpirationTag, date: string): string {
   const formatted = formatDate(date);
   switch (tag) {
     case 'ENDS_TODAY':
@@ -107,35 +122,35 @@ function getExpirationBadge(tag: ExpirationTag, date: string): string {
   }
 }
 
-function getTierBadge(tier: TierType): string {
+export function getTierBadge(tier: TierType): string {
   switch (tier) {
     case 'MAMI_PLUS':
-      return `<span class="badge badge-mami-plus">⭐ מאמי פלוס</span>`;
+      return `<span class="badge badge-mami-plus">מאמי פלוס</span>`;
     case 'MAMI_PLUS_EXCLUSIVE':
-      return `<span class="badge badge-exclusive">👑 בלעדי למאמי פלוס</span>`;
+      return `<span class="badge badge-exclusive">בלעדי למאמי פלוס</span>`;
     default:
       return '';
   }
 }
 
-function getTypeBadge(label: CampaignTypeLabel, discountPct: number | null): string {
+export function getTypeBadge(label: CampaignTypeLabel, discountPct: number | null): string {
   switch (label) {
     case 'DISCOUNT':
       return discountPct
         ? `<span class="badge badge-discount">${discountPct}% הנחה</span>`
-        : `<span class="badge badge-discount">🏷️ הנחה</span>`;
+        : `<span class="badge badge-discount">הנחה</span>`;
     case 'GIFT':
       return `<span class="badge badge-gift">🎁 מתנה</span>`;
     case 'COMBO':
-      return `<span class="badge badge-discount">🔗 קומבו</span>`;
+      return `<span class="badge badge-discount">קומבו</span>`;
     case 'OFFER':
-      return `<span class="badge badge-offer">💡 הצעה</span>`;
+      return `<span class="badge badge-offer">הצעה</span>`;
     default:
       return '';
   }
 }
 
-function renderConversionAction(action: ConversionAction): string {
+export function renderConversionAction(action: ConversionAction): string {
   const displayStringsHtml = action.displayStrings
     .filter((d) => ['CTA', 'CTA_HEADER', 'CTA_SUBTITLE', 'CTA_REDEMPTION_DETAILS'].includes(d.type))
     .map((d) => `<p>${d.value.text}</p>`)
@@ -156,7 +171,12 @@ function renderConversionAction(action: ConversionAction): string {
     case 'LEADING_LINK':
     case 'PURCHASE_LINK':
     case 'PERSONAL_LINK': {
-      ctaContent = `<div class="cta-label">🔗 ניתן למימוש דרך הלינק (ראה פרטים למטה)</div>`;
+      const data = action.data as { url?: string } | null;
+      if (data?.url) {
+        ctaContent = `<a class="cta-action-link" href="${data.url}" target="_blank" rel="noopener">מעבר לאתר</a>`;
+      } else {
+        ctaContent = `<div class="cta-label">ניתן למימוש דרך הלינק</div>`;
+      }
       break;
     }
     case 'CALL_TO_NUMBER': {
@@ -199,15 +219,6 @@ function getDescription(displayStrings: DisplayString[]): string {
   return desc?.value.text ?? '';
 }
 
-function formatDate(iso: string): string {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
-  } catch {
-    return iso;
-  }
-}
-
 export function renderCampaignDetailBody(page: CampaignPage): string {
   const c = page.campaignDetails;
   const brand = page.brandMetadata;
@@ -216,9 +227,17 @@ export function renderCampaignDetailBody(page: CampaignPage): string {
     ? `<img class="campaign-brand-logo" src="${brand.logo.url}" alt="${brand.title.text}">`
     : '';
 
-  const heroHtml = c.mainMedia?.url
-    ? `<img class="campaign-hero" src="${c.mainMedia.url}" alt="${c.title.text}">`
-    : '';
+  const brandUrl = hiMamiUrl('brand', brand.slug);
+  const campaignUrl = hiMamiUrl('campaign', c.id);
+
+  // Hero image with validity overlay
+  let heroHtml = '';
+  if (c.mainMedia?.url) {
+    const overlayHtml = c.expirationTag !== 'ENDED'
+      ? `<span class="validity-overlay">בתוקף עד ${formatDate(c.expirationDate)}</span>`
+      : '';
+    heroHtml = `<div class="campaign-hero-wrap"><img class="campaign-hero" src="${c.mainMedia.url}" alt="${c.title.text}">${overlayHtml}</div>`;
+  }
 
   const badges = [
     getTypeBadge(c.campaignTypeLabel, c.discountPercentage),
@@ -239,7 +258,7 @@ export function renderCampaignDetailBody(page: CampaignPage): string {
   const body = `<div class="campaign-card">
     <div class="campaign-brand-bar">
       ${brandLogoHtml}
-      <span class="campaign-brand-name">${brand.title.text}</span>
+      <span class="campaign-brand-name"><a href="${brandUrl}" target="_blank" rel="noopener">${brand.title.text}</a></span>
     </div>
     ${heroHtml}
     <div class="campaign-body">
@@ -248,9 +267,10 @@ export function renderCampaignDetailBody(page: CampaignPage): string {
       ${description ? `<div class="campaign-description">${description}</div>` : ''}
       ${ctaHtml}
       <div class="campaign-meta">
-        <span class="campaign-meta-item">📅 ${formatDate(c.startDate)} — ${formatDate(c.expirationDate)}</span>
+        <span class="campaign-meta-item">${formatDate(c.startDate)} — ${formatDate(c.expirationDate)}</span>
       </div>
       ${smallPrint.length > 0 ? `<div style="margin-top:8px;font-size:0.75rem;color:var(--color-text-light)">${smallPrint.join(' · ')}</div>` : ''}
+      <div class="campaign-footer-link"><a class="entity-link" href="${campaignUrl}" target="_blank" rel="noopener">צפייה באתר ←</a></div>
     </div>
   </div>`;
 
