@@ -437,6 +437,12 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-
 <div id="app" style="display:flex;justify-content:center;align-items:center;min-height:60px;color:var(--color-muted);font-size:0.9rem;">\u05d8\u05d5\u05e2\u05df...</div>
 <script>
 (function(){
+  // Immediate theme detection — runs before PostMessage handshake
+  // so the first paint matches the host context
+  if(window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches){
+    document.documentElement.setAttribute("data-theme","dark");
+  }
+
   var PROXY_BASE="${proxyBaseUrl}/img?url=";
   var nextId=1,pending={},app=document.getElementById("app");
 
