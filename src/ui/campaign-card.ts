@@ -3,8 +3,8 @@ import { wrapInHtmlDoc } from './theme.js';
 
 export const campaignCSS = `
   .campaign-card {
-    max-width: 480px;
-    background: var(--color-bg);
+    width: 100%;
+    background: var(--color-card-bg);
     border-radius: var(--border-radius);
     overflow: hidden;
     box-shadow: var(--shadow-md);
@@ -22,7 +22,7 @@ export const campaignCSS = `
     height: 36px;
     border-radius: 8px;
     object-fit: contain;
-    background: #fff;
+    background: rgba(128,128,128,0.15);
   }
   .campaign-brand-name {
     font-weight: 600;

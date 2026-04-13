@@ -1,5 +1,6 @@
 /**
  * CSS custom properties and base styles for HiMami MCP UI cards.
+ * Uses a neutral mid-tone palette that works on both light and dark backgrounds.
  * All cards use RTL direction for Hebrew content.
  */
 
@@ -8,31 +9,53 @@ export function generateBaseCSS(): string {
     :root {
       --color-primary: #FF6B9D;
       --color-primary-dark: #E85588;
-      --color-secondary: #FFF5F8;
-      --color-accent: #2D1B69;
-      --color-accent-light: #4A3A8A;
-      --color-success: #10B981;
-      --color-warning: #F59E0B;
-      --color-danger: #EF4444;
-      --color-muted: #6B7280;
-      --color-text: #1F2937;
+      --color-secondary: rgba(255,107,157,0.1);
+      --color-accent: #7C6BC4;
+      --color-accent-light: #9B8FD8;
+      --color-success: #4ADE80;
+      --color-warning: #FBBF24;
+      --color-danger: #F87171;
+      --color-muted: #9CA3AF;
+      --color-text: #E5E7EB;
       --color-text-light: #9CA3AF;
-      --color-bg: #FFFFFF;
-      --color-bg-alt: #F9FAFB;
-      --color-border: #E5E7EB;
-      --color-mami-plus: #9333EA;
-      --color-mami-plus-bg: #F3E8FF;
+      --color-bg: transparent;
+      --color-bg-alt: rgba(128,128,128,0.08);
+      --color-border: rgba(128,128,128,0.2);
+      --color-card-bg: rgba(128,128,128,0.06);
+      --color-mami-plus: #A78BFA;
+      --color-mami-plus-bg: rgba(167,139,250,0.15);
       --border-radius: 12px;
       --border-radius-sm: 8px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.15);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.2);
+      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    [data-theme="light"] {
+      --color-text: #1F2937;
+      --color-text-light: #6B7280;
+      --color-muted: #6B7280;
+      --color-bg-alt: rgba(0,0,0,0.03);
+      --color-border: rgba(0,0,0,0.1);
+      --color-card-bg: rgba(0,0,0,0.02);
+      --color-accent: #2D1B69;
+      --color-accent-light: #4A3A8A;
+      --color-mami-plus: #9333EA;
+      --color-mami-plus-bg: rgba(147,51,234,0.1);
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
       --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-      --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     }
 
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: auto;
+      overflow-x: hidden;
     }
 
     body {
@@ -52,7 +75,7 @@ export function generateBaseCSS(): string {
     }
 
     a {
-      color: var(--color-accent);
+      color: var(--color-accent-light);
       text-decoration: none;
     }
 
@@ -68,8 +91,8 @@ export function generateBaseCSS(): string {
     }
 
     .badge-discount {
-      background: #DCFCE7;
-      color: #166534;
+      background: rgba(74,222,128,0.15);
+      color: var(--color-success);
     }
 
     .badge-mami-plus {
@@ -78,33 +101,33 @@ export function generateBaseCSS(): string {
     }
 
     .badge-exclusive {
-      background: #FEF3C7;
-      color: #92400E;
+      background: rgba(251,191,36,0.15);
+      color: var(--color-warning);
     }
 
     .badge-ends-today {
-      background: #FEE2E2;
-      color: #991B1B;
+      background: rgba(248,113,113,0.15);
+      color: var(--color-danger);
     }
 
     .badge-ends-tomorrow {
-      background: #FEF3C7;
-      color: #92400E;
+      background: rgba(251,191,36,0.15);
+      color: var(--color-warning);
     }
 
     .badge-ended {
-      background: #F3F4F6;
-      color: #6B7280;
+      background: rgba(128,128,128,0.1);
+      color: var(--color-muted);
     }
 
     .badge-gift {
-      background: #DBEAFE;
-      color: #1D4ED8;
+      background: rgba(96,165,250,0.15);
+      color: #60A5FA;
     }
 
     .badge-offer {
-      background: #E0E7FF;
-      color: #3730A3;
+      background: rgba(124,107,196,0.15);
+      color: var(--color-accent-light);
     }
 
     .cta-box {
@@ -119,8 +142,8 @@ export function generateBaseCSS(): string {
       font-family: 'Courier New', monospace;
       font-size: 1.1rem;
       font-weight: 700;
-      color: var(--color-accent);
-      background: #F0EBFF;
+      color: var(--color-accent-light);
+      background: rgba(124,107,196,0.15);
       padding: 6px 12px;
       border-radius: 6px;
       display: inline-block;
@@ -156,7 +179,7 @@ export function generateBaseCSS(): string {
     .price-discounted {
       font-size: 1.3rem;
       font-weight: 700;
-      color: var(--color-primary-dark);
+      color: var(--color-primary);
     }
 
     .price-currency {
@@ -199,10 +222,11 @@ export function wrapInHtmlDoc(body: string, extraCSS = ''): string {
 /**
  * Creates a static MCP App shell for iframes.
  * The shell includes all CSS, the PostMessage handshake,
- * and a tool-result listener that injects pre-rendered card HTML.
- * This is the resource HTML that hosts load in an iframe.
+ * theme detection from host context (light/dark),
+ * image URL rewriting through our proxy, and
+ * a tool-result listener that injects pre-rendered card HTML.
  */
-export function createMcpAppShell(extraCSS = ''): string {
+export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://hi-mami-mcp.vercel.app'): string {
   return `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -211,16 +235,37 @@ export function createMcpAppShell(extraCSS = ''): string {
 <style>${generateBaseCSS()}${extraCSS}</style>
 </head>
 <body>
-<div id="app" style="display:flex;justify-content:center;align-items:center;min-height:60px;color:#999;font-size:0.9rem;">טוען...</div>
+<div id="app" style="display:flex;justify-content:center;align-items:center;min-height:60px;color:var(--color-muted);font-size:0.9rem;">\u05d8\u05d5\u05e2\u05df...</div>
 <script>
 (function(){
+  var PROXY_BASE="${proxyBaseUrl}/img?url=";
   var nextId=1,pending={},app=document.getElementById("app");
+
+  function applyTheme(ctx){
+    if(!ctx)return;
+    var theme=ctx.theme||"";
+    if(theme==="light"||theme==="dark"){
+      document.documentElement.setAttribute("data-theme",theme);
+    }
+  }
+
+  function proxyImages(){
+    var imgs=app.querySelectorAll("img[src]");
+    for(var i=0;i<imgs.length;i++){
+      var src=imgs[i].getAttribute("src");
+      if(src&&src.indexOf("hi-mami.com")!==-1&&src.indexOf(PROXY_BASE)===-1){
+        imgs[i].setAttribute("src",PROXY_BASE+encodeURIComponent(src));
+      }
+    }
+  }
+
   window.addEventListener("message",function(e){
     var m=e.data;
     if(!m||m.jsonrpc!=="2.0")return;
     if("id" in m&&"result" in m){var r=pending[m.id];if(r){delete pending[m.id];r(m.result);}return;}
     if(m.method==="ping"&&"id" in m){window.parent.postMessage({jsonrpc:"2.0",id:m.id,result:{}},"*");return;}
     if(m.method==="ui/resource-teardown"&&"id" in m){window.parent.postMessage({jsonrpc:"2.0",id:m.id,result:{}},"*");return;}
+    if(m.method==="ui/notifications/host-context-changed"&&m.params){applyTheme(m.params);}
     if(m.method==="ui/notifications/tool-result"&&m.params){
       var html=null;
       if(m.params._meta&&m.params._meta.cardHtml){html=m.params._meta.cardHtml;}
@@ -230,13 +275,14 @@ export function createMcpAppShell(extraCSS = ''): string {
           if(c.type==="resource"&&c.resource&&c.resource.mimeType==="text/html"){html=c.resource.text;break;}
         }
       }
-      if(html){app.innerHTML=html;reportSize();}
+      if(html){app.innerHTML=html;proxyImages();reportSize();}
     }
   });
   function req(method,params){return new Promise(function(resolve){var id=nextId++;pending[id]=resolve;window.parent.postMessage({jsonrpc:"2.0",method:method,params:params,id:id},"*");});}
   function notify(method,params){window.parent.postMessage({jsonrpc:"2.0",method:method,params:params||{}},"*");}
   function reportSize(){notify("ui/notifications/size-changed",{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight});}
-  req("ui/initialize",{appInfo:{name:"himami",version:"1.0.0"},appCapabilities:{},protocolVersion:"2026-01-26"}).then(function(){
+  req("ui/initialize",{appInfo:{name:"himami",version:"1.0.0"},appCapabilities:{},protocolVersion:"2026-01-26"}).then(function(result){
+    if(result&&result.hostContext){applyTheme(result.hostContext);}
     notify("ui/notifications/initialized");
     reportSize();
     if(typeof ResizeObserver!=="undefined"){new ResizeObserver(reportSize).observe(document.documentElement);}

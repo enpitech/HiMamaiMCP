@@ -156,5 +156,48 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
       });
   });
 
+  // Image proxy — bypass CORS for Hi Mami CDN images in sandboxed iframes
+  router.get('/img', (req, res) => {
+    const url = req.query['url'] as string | undefined;
+    if (!url) {
+      res.status(400).json({ error: 'Missing url parameter' });
+      return;
+    }
+
+    // Only allow proxying images from known Hi Mami domains
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch {
+      res.status(400).json({ error: 'Invalid URL' });
+      return;
+    }
+
+    const allowedHosts = ['hi-mami.com', 'dev.hi-mami.com', 'cdn.hi-mami.com', 'images.hi-mami.com'];
+    if (!allowedHosts.some((h) => parsed.hostname === h || parsed.hostname.endsWith('.' + h))) {
+      res.status(403).json({ error: 'Domain not allowed' });
+      return;
+    }
+
+    fetch(url, {
+      headers: { 'User-Agent': 'HiMamiMCP/1.0' },
+    })
+      .then(async (upstream) => {
+        if (!upstream.ok) {
+          res.status(upstream.status).json({ error: 'Upstream error' });
+          return;
+        }
+        const contentType = upstream.headers.get('content-type') ?? 'image/jpeg';
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        const buffer = Buffer.from(await upstream.arrayBuffer());
+        res.send(buffer);
+      })
+      .catch((err: unknown) => {
+        logger.error({ err, url }, 'Image proxy error');
+        res.status(502).json({ error: 'Proxy error' });
+      });
+  });
+
   return router;
 }

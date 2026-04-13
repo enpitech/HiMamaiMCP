@@ -3,8 +3,8 @@ import { wrapInHtmlDoc } from './theme.js';
 
 export const brandCSS = `
   .brand-card {
-    max-width: 480px;
-    background: var(--color-bg);
+    width: 100%;
+    background: var(--color-card-bg);
     border-radius: var(--border-radius);
     overflow: hidden;
     box-shadow: var(--shadow-md);
@@ -28,7 +28,7 @@ export const brandCSS = `
     width: 56px;
     height: 56px;
     border-radius: 12px;
-    background: #fff;
+    background: rgba(128,128,128,0.15);
     box-shadow: var(--shadow-sm);
     padding: 4px;
     display: flex;
@@ -74,7 +74,7 @@ export const brandCSS = `
     border-radius: var(--border-radius-sm);
     margin-bottom: 4px;
     border: 1px solid var(--color-border);
-    background: var(--color-bg);
+    background: var(--color-bg-alt);
   }
   .brand-deal-img {
     width: 44px;

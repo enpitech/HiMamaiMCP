@@ -9,7 +9,6 @@ import {
   formatCampaignDetail,
   formatProductDetail,
   formatCategoryPage,
-  formatHomePage,
 } from '../ui/formatters.js';
 import {
   renderSearchResultsBody,
@@ -17,13 +16,11 @@ import {
   renderCampaignDetailBody,
   renderProductDetailBody,
   renderCategoryPageBody,
-  renderHomePageBody,
   searchCSS,
   brandCSS,
   campaignCSS,
   productCSS,
   categoryCSS,
-  homeCSS,
 } from '../ui/templates.js';
 import type {
   SearchResults,
@@ -31,9 +28,9 @@ import type {
   CampaignPage,
   ProductPage,
   CategoryPage,
-  HomePage,
 } from '../types/index.js';
 import { createMcpAppShell } from '../ui/theme.js';
+import config from '../utils/config.js';
 import logger from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
@@ -62,12 +59,12 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
   // The shell embeds the handshake + tool-result listener + all CSS.
   // ---------------------------------------------------------------------------
 
-  const searchShell = createMcpAppShell(searchCSS);
-  const brandShell = createMcpAppShell(brandCSS);
-  const campaignShell = createMcpAppShell(campaignCSS);
-  const productShell = createMcpAppShell(productCSS);
-  const categoryShell = createMcpAppShell(categoryCSS);
-  const homeShell = createMcpAppShell(homeCSS);
+  const proxyBase = config.mcpPublicUrl;
+  const searchShell = createMcpAppShell(searchCSS, proxyBase);
+  const brandShell = createMcpAppShell(brandCSS, proxyBase);
+  const campaignShell = createMcpAppShell(campaignCSS, proxyBase);
+  const productShell = createMcpAppShell(productCSS, proxyBase);
+  const categoryShell = createMcpAppShell(categoryCSS, proxyBase);
 
   // ---------------------------------------------------------------------------
   // UI Resources — static app shells fetched by hosts for iframe rendering
@@ -106,13 +103,6 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
     mimeType: RESOURCE_MIME_TYPE,
   }, async () => ({
     contents: [{ uri: 'ui://himami/category', mimeType: RESOURCE_MIME_TYPE, text: categoryShell }],
-  }));
-
-  registerAppResource(server, 'Home Page UI', 'ui://himami/home', {
-    description: 'Visual home page highlights card for Hi Mami',
-    mimeType: RESOURCE_MIME_TYPE,
-  }, async () => ({
-    contents: [{ uri: 'ui://himami/home', mimeType: RESOURCE_MIME_TYPE, text: homeShell }],
   }));
 
   // -------------------------------------------------------------------------
@@ -323,51 +313,6 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         };
       } catch (err) {
         return handleToolError(err, `browse categories "${category_path}"`);
-      }
-    },
-  );
-
-  // -------------------------------------------------------------------------
-  // Tool 7: get_home_page
-  // -------------------------------------------------------------------------
-
-  registerAppTool(
-    server,
-    'get_home_page',
-    {
-      description:
-        'Get the Hi Mami home page with featured deals, hot offers, banners, and highlights. ' +
-        'Use this when users want to see what deals are currently available, ' +
-        'or ask "what\'s new on Mami" / "show me today\'s deals".',
-      annotations: TOOL_ANNOTATIONS,
-      _meta: { ui: { resourceUri: 'ui://himami/home' } },
-      inputSchema: {
-        page: z.number().optional().default(1).describe('Page number for sections'),
-        page_size: z.number().optional().default(10).describe('Sections per page'),
-      },
-    },
-    async ({ page, page_size }) => {
-      try {
-        if (page && page > 1) {
-          const sections = await api.getHomePageSections(page, page_size);
-          const categoryPage: CategoryPage = {
-            categoryMetadata: { id: 'home', slug: 'home', title: { text: 'More Deals' }, thumbnail: null, medias: [], mainColor: null, ancestorSlugs: [] },
-            pageSections: sections,
-          };
-          return {
-            content: [{ type: 'text' as const, text: formatCategoryPage(categoryPage) }],
-            _meta: { cardHtml: renderCategoryPageBody(categoryPage) },
-          };
-        }
-
-        const homePage = await api.getHomePage();
-
-        return {
-          content: [{ type: 'text' as const, text: formatHomePage(homePage) }],
-          _meta: { cardHtml: renderHomePageBody(homePage) },
-        };
-      } catch (err) {
-        return handleToolError(err, 'get home page');
       }
     },
   );

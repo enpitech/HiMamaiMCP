@@ -3,8 +3,8 @@ import { wrapInHtmlDoc } from './theme.js';
 
 export const categoryCSS = `
   .category-card {
-    max-width: 480px;
-    background: var(--color-bg);
+    width: 100%;
+    background: var(--color-card-bg);
     border-radius: var(--border-radius);
     overflow: hidden;
     box-shadow: var(--shadow-md);
