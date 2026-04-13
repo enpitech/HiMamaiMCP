@@ -39,10 +39,16 @@ function dealUrl(brandSlug: string, benefitId: string): string {
 // ---------------------------------------------------------------------------
 
 const LINKS_INSTRUCTION = `
+
 ---
-⚠️ IMPORTANT FOR AI: You MUST include the 🔗 URLs above as clickable links in your response.
-The visual card cannot open links. Users need clickable URLs to visit deals on hi-mami.com.
-Do NOT tell users to click the card — card links do not work.`;
+📌 AI RESPONSE INSTRUCTIONS:
+1. Present each deal as a numbered list: deal name + discount + clickable link
+2. Format discount codes like \`CODE123\` (backticks) so users can copy them
+3. For prices show: ~~₪original~~ → ₪discounted (save XX%)
+4. You MUST include the 🔗 URLs above as clickable links — users need them to visit the deals
+5. NEVER say "click the card above" — card links do NOT work
+6. Respond in the same language as the user (Hebrew/English)
+7. If a deal is ending today/tomorrow, highlight the urgency`;
 
 // ---------------------------------------------------------------------------
 // Helpers

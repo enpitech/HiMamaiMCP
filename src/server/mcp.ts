@@ -251,7 +251,12 @@ export function createMcpServer(api: HiMamiApiClient): McpServer {
     name: 'himami',
     version: '1.0.0',
     title: 'Hi Mami - הטבות ומבצעים',
-    description: 'Search deals, discounts, and offers on the Hi Mami platform',
+    description:
+      'Hi Mami (מאמי) is Israel\'s leading deals & benefits platform with hundreds of brands ' +
+      '(Nike, Super-Pharm, IKEA, Castro, Pizza Hut, TerminalX, and more). ' +
+      'Categories: beauty, fashion, food & grocery, kids & babies, electronics, home & kitchen, tourism. ' +
+      'Deals include discount codes, percentage discounts, gifts, vouchers, and Mami Plus exclusives. ' +
+      'Always present deals with clickable links to hi-mami.com. Respond in the user\'s language.',
     icons: [{ src: `${HIMAMI_BASE_URL}/images/mami_logo.svg`, mimeType: 'image/svg+xml', sizes: ['any'] }],
   });
   registerTools(server, api);
@@ -321,18 +326,28 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
     'search_deals',
     {
       description:
-        'Search for deals, discounts, and offers on the Hi Mami platform. ' +
-        'Search across brands, campaigns, products, and categories. ' +
-        'Returns visual cards with deal details and discount codes. ' +
-        'IMPORTANT: The visual card cannot open links. Always present any URLs from the text result ' +
-        'as clickable links in your response so the user can access them. ' +
-        'Use this tool when users ask about deals, discounts, coupons, sales, or special offers in Israel.',
+        'Search for deals, discounts, and offers on Hi Mami — Israel\'s top deals platform. ' +
+        'Searches across brands, campaigns (deals), products, and categories.\n\n' +
+        'SEARCH TIPS:\n' +
+        '- Hebrew queries often give better results (e.g. "ביוטי", "אופנה", "פיצה")\n' +
+        '- Brand names work in English: "nike", "adidas", "superpharm", "ikea"\n' +
+        '- Be specific: "pizza deals" > "food"\n' +
+        '- Omit the type filter for broad discovery; use type=BRAND to find a brand page\n\n' +
+        'RESPONSE FORMAT:\n' +
+        '- Present each deal as a numbered item with name, discount/price, and a CLICKABLE link\n' +
+        '- Put discount codes in `backticks` for easy copying\n' +
+        '- Always include the 🔗 URLs from the text result as clickable links\n' +
+        '- NEVER tell users to "click the card" — card links do not work\n' +
+        '- To get full deal details (discount codes, redemption links), call get_campaign with the campaign ID',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/search' } },
       inputSchema: {
-        query: z.string().min(2).describe('Search query, e.g. "nike", "baby products", "pizza deals", "beauty discounts"'),
+        query: z.string().min(2).describe(
+          'Search query in Hebrew or English. Examples: "nike", "ביוטי", "פיצה", "baby products", "superpharm". ' +
+          'Use brand name, product category, or deal type.',
+        ),
         type: z.enum(['BRAND', 'CAMPAIGN', 'PRODUCT', 'CATEGORY']).optional()
-          .describe('Optional: filter results to a specific type'),
+          .describe('Filter to one type. BRAND = find brands, CAMPAIGN = find deals, PRODUCT = find products with prices'),
         limit: z.number().optional().default(10)
           .describe('Max results per group (default: 10)'),
       },
@@ -359,11 +374,12 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
     'get_suggestions',
     {
       description:
-        'Get autocomplete suggestions for search queries on Hi Mami. ' +
-        'Returns matching brands, campaigns, products, and categories sorted by relevance.',
+        'Autocomplete helper for Hi Mami search. Use BEFORE search_deals when the user\'s ' +
+        'request is vague or you\'re unsure of the exact brand/product name. ' +
+        'Returns suggestions sorted by relevance. Use the suggestion to make a targeted search_deals or get_brand call.',
       annotations: TOOL_ANNOTATIONS,
       inputSchema: {
-        query: z.string().min(1).describe('Partial search query for autocomplete'),
+        query: z.string().min(1).describe('Partial query for autocomplete, e.g. "סופר", "nik", "פיצ"'),
         limit: z.number().optional().default(5).describe('Max number of suggestions'),
       },
     },
@@ -396,15 +412,22 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
     'get_brand',
     {
       description:
-        'Get a brand page on Hi Mami with its metadata, logo, description, and active deals/campaigns. ' +
-        'Use the brand slug (URL-friendly name) to look up a specific brand. ' +
-        'IMPORTANT: Always present the brand URL and any deal links from the text result to the user, ' +
-        'as the visual card cannot open links. ' +
-        'Examples: "nike", "pampers", "pizzahut", "superfarmonline".',
+        'Get a brand\'s page on Hi Mami with all active deals. ' +
+        'Use after finding a brand in search results, or when a user asks about a specific brand.\n\n' +
+        'RESPONSE FORMAT:\n' +
+        '- Show the brand name and description\n' +
+        '- List each deal with its discount and a clickable link\n' +
+        '- Put discount codes in `backticks`\n' +
+        '- To get full deal details (codes, redemption steps), call get_campaign with the deal ID\n\n' +
+        'Common brand slugs: "nike", "superfarmonline", "ikea", "castro", "pizzahut", ' +
+        '"golf", "terminalx", "erroca", "h-and-o", "cramim", "arad-textile".',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/brand' } },
       inputSchema: {
-        brand_slug: z.string().describe('Brand URL slug, e.g. "nike", "pampers", "pizzahut"'),
+        brand_slug: z.string().describe(
+          'Brand URL slug (lowercase, hyphens). Examples: "nike", "superfarmonline", "pizzahut", "h-and-o". ' +
+          'Tip: use get_suggestions first if unsure of the exact slug.',
+        ),
         page: z.number().optional().default(1).describe('Page number for deals listing'),
         page_size: z.number().optional().default(20).describe('Items per page (max 100)'),
       },
@@ -437,16 +460,20 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
     'get_campaign',
     {
       description:
-        'Get full details of a specific deal/campaign on Hi Mami. ' +
-        'Returns the campaign title, description, discount info, expiration date, ' +
-        'and how to redeem (code, link, phone number, etc.). ' +
-        'IMPORTANT: Always present redemption URLs, codes, and phone numbers from the text result ' +
-        'to the user as the visual card cannot open links. ' +
-        'Use the campaign ID returned by search_deals or get_brand.',
+        'Get full details of a specific deal/campaign on Hi Mami, including redemption info. ' +
+        'This is the key tool for actionable deal info — it returns discount codes, redemption links, ' +
+        'phone numbers, vouchers, expiration dates, and terms.\n\n' +
+        'RESPONSE FORMAT:\n' +
+        '- Show deal title and brand name\n' +
+        '- Put discount codes in `backticks` so users can copy them\n' +
+        '- Include the redemption/purchase link as a clickable URL\n' +
+        '- Highlight urgency if ending today/tomorrow\n' +
+        '- Show terms and conditions\n' +
+        '- Always include the 🔗 deal URL as a clickable link',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/campaign' } },
       inputSchema: {
-        campaign_id: z.string().describe('Campaign ID (returned by search or brand page)'),
+        campaign_id: z.string().describe('Campaign ID from search_deals or get_brand results (e.g. "abc123")'),
       },
     },
     withToolLogging('get_campaign', async ({ campaign_id }) => {
@@ -472,16 +499,17 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
     'get_product',
     {
       description:
-        'Get full details of a specific product offer on Hi Mami. ' +
-        'Returns product title, images, original and discounted price, ' +
-        'discount percentage, and how to purchase/redeem. ' +
-        'IMPORTANT: Always present purchase URLs and codes from the text result ' +
-        'to the user as the visual card cannot open links. ' +
-        'Use the product ID returned by search_deals or get_campaign.',
+        'Get a specific product offer with pricing and purchase info. ' +
+        'Returns original price, discounted price, savings, discount code, and purchase link.\n\n' +
+        'RESPONSE FORMAT:\n' +
+        '- Show ~~original price~~ → discounted price (XX% off, save ₪XX)\n' +
+        '- Put discount codes in `backticks`\n' +
+        '- Include the purchase link as a clickable URL\n' +
+        '- Always include the 🔗 product URL',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/product' } },
       inputSchema: {
-        product_id: z.string().describe('Product ID (returned by search or campaign page)'),
+        product_id: z.string().describe('Product ID from search_deals or get_brand results'),
       },
     },
     withToolLogging('get_product', async ({ product_id }) => {
@@ -507,17 +535,24 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
     'browse_categories',
     {
       description:
-        'Browse deal categories on Hi Mami. ' +
-        'Pass an empty path to see all top-level categories, ' +
-        'or a nested path to drill down (e.g. "fashion", "fashion/women/shoes"). ' +
-        'Returns the category metadata and deals in that category. ' +
-        'IMPORTANT: Always include the deal URLs from the text result as clickable links ' +
-        'in your response so users can visit the deals on hi-mami.com.',
+        'Browse deal categories on Hi Mami for discovery. ' +
+        'Use when users say "what deals are available?", "show me beauty offers", "what categories exist?".\n\n' +
+        'AVAILABLE CATEGORIES: beuty (beauty/cosmetics), fashion, home (home & kitchen), ' +
+        'hasmal (electronics), baby (kids & babies), tayarotclali (tourism & travel), ' +
+        'food (food & grocery), insurance, sport.\n' +
+        'Pass empty string for all top-level categories.\n\n' +
+        'RESPONSE FORMAT:\n' +
+        '- List each deal with name, discount, and a clickable link\n' +
+        '- Always include the 🔗 URLs\n' +
+        '- NEVER tell users to "click the card"',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/category' } },
       inputSchema: {
         category_path: z.string().optional().default('')
-          .describe('Category path, e.g. "fashion", "fashion/women". Empty = root categories'),
+          .describe(
+            'Category slug: "beuty", "fashion", "home", "hasmal", "baby", "tayarotclali", "food", "insurance", "sport". ' +
+            'Empty = show all categories. Can nest: "fashion/women".',
+          ),
       },
     },
     withToolLogging('browse_categories', async ({ category_path }) => {
