@@ -112,6 +112,7 @@ img{max-width:100%;height:auto;display:block;border-radius:8px}
 .campaign-brand-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--br2)}
 .campaign-brand-logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:var(--bg2)}
 .campaign-brand-name{font-weight:600;color:var(--t)}
+.deal-hero-wrap:not(:has(img)),.campaign-hero-wrap:not(:has(img)),.product-hero-wrap:not(:has(img)),.brand-hero:not(:has(img)){display:none}
 .campaign-hero-wrap,.product-hero-wrap{position:relative;overflow:hidden}
 .campaign-hero{width:100%;max-height:240px;object-fit:cover}
 .product-hero{width:100%;max-height:280px;object-fit:cover;background:var(--bg2)}
