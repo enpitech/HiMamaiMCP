@@ -116,7 +116,9 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       description:
         'Search for deals, discounts, and offers on the Hi Mami platform. ' +
         'Search across brands, campaigns, products, and categories. ' +
-        'Returns rich visual cards with deal details, discount codes, and links. ' +
+        'Returns visual cards with deal details and discount codes. ' +
+        'IMPORTANT: The visual card cannot open links. Always present any URLs from the text result ' +
+        'as clickable links in your response so the user can access them. ' +
         'Use this tool when users ask about deals, discounts, coupons, sales, or special offers in Israel.',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/search' } },
@@ -189,6 +191,8 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       description:
         'Get a brand page on Hi Mami with its metadata, logo, description, and active deals/campaigns. ' +
         'Use the brand slug (URL-friendly name) to look up a specific brand. ' +
+        'IMPORTANT: Always present the brand URL and any deal links from the text result to the user, ' +
+        'as the visual card cannot open links. ' +
         'Examples: "nike", "pampers", "pizzahut", "superfarmonline".',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/brand' } },
@@ -229,6 +233,8 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         'Get full details of a specific deal/campaign on Hi Mami. ' +
         'Returns the campaign title, description, discount info, expiration date, ' +
         'and how to redeem (code, link, phone number, etc.). ' +
+        'IMPORTANT: Always present redemption URLs, codes, and phone numbers from the text result ' +
+        'to the user as the visual card cannot open links. ' +
         'Use the campaign ID returned by search_deals or get_brand.',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/campaign' } },
@@ -262,6 +268,8 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         'Get full details of a specific product offer on Hi Mami. ' +
         'Returns product title, images, original and discounted price, ' +
         'discount percentage, and how to purchase/redeem. ' +
+        'IMPORTANT: Always present purchase URLs and codes from the text result ' +
+        'to the user as the visual card cannot open links. ' +
         'Use the product ID returned by search_deals or get_campaign.',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/product' } },
