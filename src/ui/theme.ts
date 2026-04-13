@@ -40,7 +40,7 @@ export function generateBaseCSS(): string {
       --color-bg: transparent;
       --color-bg-alt: rgba(128,128,128,0.06);
       --color-border: rgba(128,128,128,0.15);
-      --color-card-bg: rgba(128,128,128,0.05);
+      --color-card-bg: rgba(128,128,128,0.08);
       --color-mami-plus: #FFB300;
       --color-mami-plus-bg: rgba(255,179,0,0.12);
       --border-radius: 12px;
@@ -94,6 +94,15 @@ export function generateBaseCSS(): string {
     a {
       color: var(--color-primary);
       text-decoration: none;
+    }
+
+    h1 a, h2 a, h3 a,
+    .heading-link {
+      color: inherit;
+      text-decoration: none;
+    }
+    .heading-link:hover {
+      color: var(--color-primary);
     }
 
     .badge {

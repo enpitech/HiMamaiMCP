@@ -258,7 +258,7 @@ export function renderCampaignDetailBody(page: CampaignPage): string {
   const body = `<div class="campaign-card">
     <div class="campaign-brand-bar">
       ${brandLogoHtml}
-      <span class="campaign-brand-name"><a href="${brandUrl}" target="_blank" rel="noopener">${brand.title.text}</a></span>
+      <span class="campaign-brand-name"><a class="heading-link" href="${brandUrl}" target="_blank" rel="noopener">${brand.title.text}</a></span>
     </div>
     ${heroHtml}
     <div class="campaign-body">

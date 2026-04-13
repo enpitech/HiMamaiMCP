@@ -1,5 +1,5 @@
 import type { BrandPage, CollectionItem, CampaignDetails, ProductDetails } from '../types/index.js';
-import { wrapInHtmlDoc, hiMamiUrl } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, formatDate } from './theme.js';
 
 export const brandCSS = `
   .brand-card {
@@ -64,8 +64,10 @@ export const brandCSS = `
   .brand-deals-header {
     font-size: 0.95rem;
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--color-text);
     margin-bottom: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -76,30 +78,26 @@ export const brandCSS = `
   }
   .brand-deal-item {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px;
     border-radius: var(--border-radius-sm);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     border: 1px solid var(--color-border);
     background: var(--color-bg-alt);
   }
   .brand-deal-img {
-    width: 44px;
-    height: 44px;
+    width: 80px;
+    height: 60px;
     border-radius: 8px;
     object-fit: cover;
     flex-shrink: 0;
   }
   .brand-deal-img-placeholder {
-    width: 44px;
-    height: 44px;
+    width: 80px;
+    height: 60px;
     border-radius: 8px;
     background: var(--color-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
     flex-shrink: 0;
   }
   .brand-deal-info {
@@ -110,21 +108,24 @@ export const brandCSS = `
     font-weight: 600;
     font-size: 0.85rem;
     color: var(--color-text);
-    white-space: nowrap;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
     overflow: hidden;
-    text-overflow: ellipsis;
   }
   .brand-deal-meta {
     font-size: 0.75rem;
     color: var(--color-muted);
-    margin-top: 2px;
+    margin-top: 3px;
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
   }
   .brand-deal-link {
     flex-shrink: 0;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+    align-self: center;
   }
 `;
 
@@ -179,10 +180,14 @@ export function renderBrandPageBody(page: BrandPage): string {
         if (c.discountPercentage) meta.push(`${c.discountPercentage}% הנחה`);
         if (c.campaignTypeLabel === 'GIFT') meta.push('🎁 מתנה');
         if (c.tierType === 'MAMI_PLUS') meta.push('מאמי+');
+        if (c.expirationTag === 'ENDS_TODAY') meta.push('⏰ מסתיים היום');
+        else if (c.expirationTag === 'ENDS_TOMORROW') meta.push('⏰ מסתיים מחר');
+        else if (c.expirationDate) meta.push(`עד ${formatDate(c.expirationDate)}`);
       } else {
         const p = deal.data as ProductDetails;
         if (p.price) meta.push(`₪${p.price.discountedPrice}`);
         if (p.price?.discountPercent) meta.push(`-${p.price.discountPercent}%`);
+        if (p.expirationDate) meta.push(`עד ${formatDate(p.expirationDate)}`);
       }
 
       const imgHtml = imgUrl
@@ -213,7 +218,7 @@ export function renderBrandPageBody(page: BrandPage): string {
       ${logoHtml}
     </div>
     <div class="brand-body">
-      <div class="brand-name"><a href="${brandUrl}" target="_blank" rel="noopener">${b.title.text}</a></div>
+      <div class="brand-name"><a class="heading-link" href="${brandUrl}" target="_blank" rel="noopener">${b.title.text}</a></div>
       ${descHtml}
       ${dealsHtml}
     </div>

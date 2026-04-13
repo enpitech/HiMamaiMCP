@@ -138,6 +138,19 @@ function extractImage(item: Record<string, unknown>): string | null {
   return mainMedia?.url ?? logo?.url ?? image?.url ?? null;
 }
 
+function extractBrandName(item: Record<string, unknown>): string | null {
+  // Try brand logo alt text from medias (contains Hebrew brand name)
+  const medias = item.medias as Array<{ type: string; value: { metadata?: { alt?: string } } }> | undefined;
+  if (medias) {
+    const brandLogo = medias.find((m) => m.type === 'BRAND_LOGO');
+    if (brandLogo?.value?.metadata?.alt) {
+      return brandLogo.value.metadata.alt.replace(/^לוגו\s*/, '');
+    }
+  }
+  // Fall back to slug
+  return item.brandSlug as string | null;
+}
+
 function extractDescription(item: Record<string, unknown>): string | null {
   const displayStrings = item.displayStrings as Array<{ type: string; value: { text: string } }> | undefined;
   if (!displayStrings) return null;
@@ -187,7 +200,7 @@ function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'produ
   }
 
   // Price
-  const brandSlug = item.brandSlug as string | undefined;
+  const brandName = extractBrandName(item);
   let priceHtml = '';
   if (price?.discountedPrice) {
     priceHtml = `<span class="price-discounted">${price.discountedPrice} ${price.currency ?? '₪'}</span>`;
@@ -206,7 +219,7 @@ function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'produ
   return `<div class="deal-card">
     ${heroHtml}
     <div class="deal-body">
-      ${brandSlug ? `<div class="deal-brand">${brandSlug}</div>` : ''}
+      ${brandName ? `<div class="deal-brand">${brandName}</div>` : ''}
       ${badges.length > 0 ? `<div class="deal-badges">${badges.join('')}</div>` : ''}
       <div class="deal-title">${title}</div>
       ${description ? `<div class="deal-description">${description}</div>` : ''}
@@ -247,7 +260,6 @@ export function renderSearchResultsBody(results: SearchResults): string {
 
   if (totalResults === 0) {
     return `<div class="search-empty">
-      <div class="search-empty-icon">🔍</div>
       <div>לא נמצאו תוצאות עבור "${results.query}"</div>
     </div>`;
   }

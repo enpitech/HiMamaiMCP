@@ -152,7 +152,7 @@ export function renderProductDetailBody(page: ProductPage): string {
   const body = `<div class="product-card">
     ${heroHtml}
     <div class="product-body">
-      <div class="product-brand"><a href="${brandUrl}" target="_blank" rel="noopener">${brand.title.text}</a></div>
+      <div class="product-brand"><a class="heading-link" href="${brandUrl}" target="_blank" rel="noopener">${brand.title.text}</a></div>
       <div class="product-title">${p.title.text}</div>
       <div class="product-badges">${badges.join('')}</div>
       ${priceHtml}

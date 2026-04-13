@@ -109,16 +109,18 @@ export const homeCSS = `
   }
   .home-grid-item {
     flex-shrink: 0;
-    width: 120px;
+    width: 150px;
     border-radius: 10px;
     overflow: hidden;
-    background: var(--color-bg);
+    background: var(--color-card-bg);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--color-border);
+    text-decoration: none;
+    color: inherit;
   }
   .home-grid-item img {
     width: 100%;
-    height: 80px;
+    height: 100px;
     object-fit: cover;
   }
   .home-grid-item-body {
