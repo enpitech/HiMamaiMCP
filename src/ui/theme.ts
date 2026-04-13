@@ -5,14 +5,14 @@
  * All cards use RTL direction for Hebrew content.
  */
 
-export const HIMAMI_BASE_URL = 'https://hi-mami.com';
+export const HIMAMI_BASE_URL = 'https://www.hi-mami.com';
 
-export function hiMamiUrl(type: 'brand' | 'campaign' | 'product' | 'category', id: string): string {
+export function hiMamiUrl(type: 'brand' | 'campaign' | 'product' | 'category', id: string, brandSlug?: string): string {
   switch (type) {
     case 'brand': return `${HIMAMI_BASE_URL}/brands/${id}`;
-    case 'campaign': return `${HIMAMI_BASE_URL}/campaigns/${id}`;
-    case 'product': return `${HIMAMI_BASE_URL}/products/${id}`;
-    case 'category': return `${HIMAMI_BASE_URL}/categories/${id}`;
+    case 'campaign': return `${HIMAMI_BASE_URL}/brands/${brandSlug ?? ''}/?benefitid=${id}`;
+    case 'product': return `${HIMAMI_BASE_URL}/brands/${brandSlug ?? ''}/?benefitid=${id}`;
+    case 'category': return `${HIMAMI_BASE_URL}/sliders/${id}`;
   }
 }
 

@@ -117,7 +117,7 @@ function renderCollectionItem(item: CollectionItem): string {
       const c = item.data as CampaignDetails;
       title = c.title.text;
       imgUrl = c.mainMedia?.url ?? null;
-      entityUrl = hiMamiUrl('campaign', c.id);
+      entityUrl = hiMamiUrl('campaign', c.id, c.brandSlug);
       const parts: string[] = [];
       if (c.discountPercentage) parts.push(`${c.discountPercentage}% הנחה`);
       if (c.tierType === 'MAMI_PLUS') parts.push('מאמי+');
@@ -128,7 +128,7 @@ function renderCollectionItem(item: CollectionItem): string {
       const p = item.data as ProductDetails;
       title = p.title.text;
       imgUrl = p.mainMedia?.url ?? null;
-      entityUrl = hiMamiUrl('product', p.id);
+      entityUrl = hiMamiUrl('product', p.id, p.brandSlug);
       if (p.price) meta = `₪${p.price.discountedPrice} (${p.price.discountPercent}% הנחה)`;
       break;
     }

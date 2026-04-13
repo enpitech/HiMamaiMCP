@@ -106,7 +106,7 @@ export function renderProductDetailBody(page: ProductPage): string {
   const brand = page.brandMetadata;
 
   const brandUrl = hiMamiUrl('brand', brand.slug);
-  const productUrl = hiMamiUrl('product', p.id);
+  const productUrl = hiMamiUrl('product', p.id, brand.slug);
 
   // Hero image with validity overlay
   let heroHtml = '';

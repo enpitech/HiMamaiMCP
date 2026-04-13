@@ -229,7 +229,7 @@ export function renderCampaignDetailBody(page: CampaignPage): string {
     : '';
 
   const brandUrl = hiMamiUrl('brand', brand.slug);
-  const campaignUrl = hiMamiUrl('campaign', c.id);
+  const campaignUrl = hiMamiUrl('campaign', c.id, brand.slug);
 
   // Hero image with validity overlay
   let heroHtml = '';

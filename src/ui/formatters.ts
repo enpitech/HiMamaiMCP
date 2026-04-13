@@ -20,6 +20,19 @@ import type {
   TierType,
   PageSection,
 } from '../types/index.js';
+import { HIMAMI_BASE_URL } from './theme.js';
+
+// ---------------------------------------------------------------------------
+// URL helpers — match Hi Mami's actual website URL structure
+// ---------------------------------------------------------------------------
+
+function brandUrl(slug: string): string {
+  return `${HIMAMI_BASE_URL}/brands/${slug}`;
+}
+
+function dealUrl(brandSlug: string, benefitId: string): string {
+  return `${HIMAMI_BASE_URL}/brands/${brandSlug}/?benefitid=${benefitId}`;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -146,7 +159,7 @@ export function formatSearchResults(results: SearchResults): string {
       const item = raw as Record<string, unknown>;
       const title = (item.title as { text?: string })?.text ?? String(item.slug ?? '');
       const slug = item.slug as string | undefined;
-      lines.push(`  • ${title} — https://hi-mami.com/brands/${slug ?? ''}`);
+      lines.push(`  • ${title} — ${brandUrl(slug ?? '')}`);
     }
     lines.push('');
   }
@@ -166,7 +179,7 @@ export function formatSearchResults(results: SearchResults): string {
       else if (item.expirationTag === 'ENDS_TOMORROW') meta.push('מסתיים מחר');
       const suffix = meta.length > 0 ? ` | ${meta.join(' · ')}` : '';
       lines.push(`  • ${title}${suffix}`);
-      if (id) lines.push(`    🔗 https://hi-mami.com/campaigns/${id}`);
+      if (id) lines.push(`    🔗 ${dealUrl((item.brandSlug as string) ?? '', id ?? '')}`);
     }
     lines.push('');
   }
@@ -186,7 +199,7 @@ export function formatSearchResults(results: SearchResults): string {
       }
       const suffix = meta.length > 0 ? ` | ${meta.join(' · ')}` : '';
       lines.push(`  • ${title}${suffix}`);
-      if (id) lines.push(`    🔗 https://hi-mami.com/products/${id}`);
+      if (id) lines.push(`    🔗 ${dealUrl((item.brandSlug as string) ?? '', id ?? '')}`);
     }
     lines.push('');
   }
@@ -259,8 +272,8 @@ export function formatCampaignDetail(page: CampaignPage): string {
   // Meta
   lines.push(`📅 תאריכים: ${formatDate(c.startDate)} — ${formatDate(c.expirationDate)}`);
   lines.push('');
-  lines.push(`🔗 לצפייה במבצע: https://hi-mami.com/campaigns/${c.id}`);
-  lines.push(`🏷️ עמוד המותג: https://hi-mami.com/brands/${c.brandSlug}`);
+  lines.push(`🔗 לצפייה במבצע: ${dealUrl(c.brandSlug, c.id)}`);
+  lines.push(`🏷️ עמוד המותג: ${brandUrl(c.brandSlug)}`);
 
   return lines.join('\n');
 }
@@ -317,8 +330,8 @@ export function formatProductDetail(page: ProductPage): string {
   }
 
   lines.push('');
-  lines.push(`🔗 לצפייה במוצר: https://hi-mami.com/products/${p.id}`);
-  lines.push(`🏷️ עמוד המותג: https://hi-mami.com/brands/${p.brandSlug}`);
+  lines.push(`🔗 לצפייה במוצר: ${dealUrl(p.brandSlug, p.id)}`);
+  lines.push(`🏷️ עמוד המותג: ${brandUrl(p.brandSlug)}`);
 
   return lines.join('\n');
 }
@@ -355,7 +368,7 @@ export function formatBrandPage(page: BrandPage): string {
         meta.push(expirationText(c.expirationTag, c.expirationDate));
         lines.push(`  • ${c.title.text}`);
         lines.push(`    ${meta.join(' | ')}`);
-        lines.push(`    🔗 https://hi-mami.com/campaigns/${c.id}`);
+        lines.push(`    🔗 ${dealUrl(c.brandSlug, c.id)}`);
       } else {
         const p = deal.data as ProductDetails;
         const meta: string[] = [];
@@ -364,7 +377,7 @@ export function formatBrandPage(page: BrandPage): string {
         meta.push(expirationText(p.expirationTag, p.expirationDate));
         lines.push(`  • ${p.title.text}`);
         lines.push(`    ${meta.join(' | ')}`);
-        lines.push(`    🔗 https://hi-mami.com/products/${p.id}`);
+        lines.push(`    🔗 ${dealUrl(p.brandSlug, p.id)}`);
       }
     }
     if (deals.length > 15) {
@@ -373,7 +386,7 @@ export function formatBrandPage(page: BrandPage): string {
     lines.push('');
   }
 
-  lines.push(`🔗 https://hi-mami.com/brands/${b.slug}`);
+  lines.push(`🔗 ${brandUrl(b.slug)}`);
 
   return lines.join('\n');
 }
@@ -427,7 +440,7 @@ export function formatHomePage(page: HomePage): string {
     }
   }
 
-  lines.push('🔗 https://hi-mami.com');
+  lines.push(`🔗 ${HIMAMI_BASE_URL}`);
 
   return lines.join('\n');
 }
@@ -468,7 +481,7 @@ function formatCollectionItem(item: CollectionItem, lines: string[]): void {
       if (tier) meta.push(tier);
       const suffix = meta.length > 0 ? ` (${meta.join(', ')})` : '';
       lines.push(`  🎯 ${c.title.text}${suffix}`);
-      lines.push(`     🔗 https://hi-mami.com/campaigns/${c.id}`);
+      lines.push(`     🔗 https://www.hi-mami.com/campaigns/${c.id}`);
       break;
     }
     case 'PRODUCT_DETAILS': {

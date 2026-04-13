@@ -220,7 +220,7 @@ export function renderHomePageBody(page: HomePage): string {
           title = c.title.text;
           imgUrl = c.mainMedia?.url ?? null;
           discount = c.discountPercentage;
-          entityUrl = hiMamiUrl('campaign', c.id);
+          entityUrl = hiMamiUrl('campaign', c.id, c.brandSlug);
           break;
         }
         case 'PRODUCT_DETAILS': {
@@ -228,7 +228,7 @@ export function renderHomePageBody(page: HomePage): string {
           title = p.title.text;
           imgUrl = p.mainMedia?.url ?? null;
           discount = p.price?.discountPercent ?? null;
-          entityUrl = hiMamiUrl('product', p.id);
+          entityUrl = hiMamiUrl('product', p.id, p.brandSlug);
           break;
         }
         case 'BRAND_METADATA': {
