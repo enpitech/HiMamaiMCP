@@ -34,54 +34,91 @@ import config from '../utils/config.js';
 import logger from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
-// Helper: strip all <a> tags from card HTML — links don't work in sandboxed
-// iframes, so we remove them to avoid dead clicks.
+// Card HTML post-processing for MCP iframe sandbox:
+// 1. Strip links (sandbox blocks navigation)
+// 2. Strip images (sandbox blocks external loading, base64 is unreliable)
+// 3. Inject self-contained CSS (bypasses cached app shell styles)
 // ---------------------------------------------------------------------------
 
+/** Remove all <a> tags, keeping inner content. */
 function stripLinks(html: string): string {
   return html.replace(/<a\b[^>]*>/gi, '').replace(/<\/a>/gi, '');
 }
 
-// ---------------------------------------------------------------------------
-// Helper: inline images as base64 data URIs so they work inside sandboxed
-// iframes (Claude Desktop, ChatGPT) that block external image loading.
-// ---------------------------------------------------------------------------
+/** Remove all <img> tags and their wrapper divs (hero-wrap, etc.). */
+function stripImages(html: string): string {
+  return html
+    .replace(/<div class="(deal-hero-wrap|campaign-hero-wrap|product-hero-wrap|brand-hero|home-hero)"[^>]*>[\s\S]*?<\/div>/gi, '')
+    .replace(/<img\b[^>]*\/?>/gi, '');
+}
 
-async function inlineImages(html: string, api: HiMamiApiClient): Promise<string> {
-  const imgRegex = /(<img\s[^>]*\bsrc=")([^"]+)(")/gi;
-  const matches: Array<{ full: string; pre: string; url: string; post: string }> = [];
+/** Inject inline CSS so the card looks correct regardless of cached app shell. */
+function addCardCSS(html: string): string {
+  const css = `<style>
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111827;background:#fff;direction:rtl;text-align:right;font-size:15px;line-height:1.5;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0}
+.search-header{padding:14px 16px;border-bottom:1px solid #E5E7EB}
+.search-title{font-size:1rem;font-weight:700;color:#111827}
+.search-subtitle{font-size:0.8rem;color:#6B7280;margin-top:2px}
+.search-empty{text-align:center;padding:32px 16px;color:#6B7280}
+.deal-card{border-bottom:1px solid #E5E7EB;padding:12px 16px}
+.deal-card:last-child{border-bottom:none}
+.deal-brand{font-size:0.75rem;color:#6B7280;margin-bottom:4px}
+.deal-title{font-size:1rem;font-weight:700;color:#111827;line-height:1.4;margin-bottom:4px}
+.deal-description{font-size:0.85rem;color:#4B5563;line-height:1.4;margin-bottom:8px}
+.deal-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.deal-footer{display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:#6B7280;padding-top:6px;border-top:1px solid #E5E7EB}
+.brand-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #E5E7EB}
+.brand-row-name{font-weight:600;font-size:0.9rem;color:#111827}
+.brand-row-desc{font-size:0.8rem;color:#6B7280;margin-top:2px}
+.campaign-card,.product-card,.brand-card,.category-card,.home-card{background:#fff;border-radius:12px;border:1px solid #D1D5DB;overflow:hidden;max-width:480px;margin:0 auto}
+.campaign-brand-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#F3F4F6;border-bottom:1px solid #E5E7EB}
+.campaign-brand-name{font-weight:600;color:#111827}
+.campaign-body,.product-body,.brand-body{padding:16px}
+.campaign-title,.product-title{font-size:1.15rem;font-weight:700;color:#111827;margin-bottom:6px;line-height:1.4}
+.campaign-description,.product-description,.brand-description{font-size:0.9rem;color:#4B5563;margin-bottom:12px;line-height:1.5}
+.campaign-badges,.product-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.campaign-meta,.product-meta{display:flex;gap:12px;font-size:0.8rem;color:#6B7280;margin-top:12px;padding-top:12px;border-top:1px solid #E5E7EB}
+.brand-name{font-size:1.25rem;font-weight:700;color:#111827;margin-bottom:6px}
+.brand-deals-header{font-size:0.95rem;font-weight:700;color:#111827;margin-bottom:10px;padding-top:12px;border-top:1px solid #E5E7EB}
+.brand-deal-item{display:flex;align-items:flex-start;gap:12px;padding:10px;border-radius:8px;margin-bottom:6px;border:1px solid #E5E7EB;background:#F9FAFB}
+.brand-deal-title{font-weight:600;font-size:0.85rem;color:#111827}
+.brand-deal-meta{font-size:0.75rem;color:#6B7280;margin-top:3px}
+.category-header{padding:16px;border-bottom:1px solid #E5E7EB;display:flex;align-items:center;gap:12px}
+.category-title{font-size:1.15rem;font-weight:700;color:#111827}
+.category-sections{padding:8px 16px 16px}
+.category-section-title{font-size:0.95rem;font-weight:700;color:#E91E63;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.category-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #E5E7EB}
+.category-item:last-child{border-bottom:none}
+.category-item-title{font-weight:600;font-size:0.85rem;color:#111827}
+.category-item-meta{font-size:0.75rem;color:#6B7280}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;white-space:nowrap}
+.badge-discount{background:rgba(22,163,74,0.1);color:#16A34A}
+.badge-mami-plus{background:rgba(180,83,9,0.1);color:#B45309}
+.badge-exclusive{background:rgba(233,30,99,0.1);color:#E91E63}
+.badge-ends-today{background:rgba(220,38,38,0.1);color:#DC2626}
+.badge-ends-tomorrow{background:rgba(217,119,6,0.1);color:#D97706}
+.badge-ended{background:rgba(107,114,128,0.1);color:#6B7280}
+.badge-gift{background:rgba(37,99,235,0.1);color:#2563EB}
+.badge-offer{background:rgba(233,30,99,0.08);color:#E91E63}
+.cta-box{background:rgba(233,30,99,0.06);border:1px solid #E91E63;border-radius:8px;padding:12px 16px;margin-top:12px}
+.cta-code{font-family:'Courier New',monospace;font-size:1.1rem;font-weight:700;color:#E91E63;background:rgba(233,30,99,0.08);padding:6px 12px;border-radius:6px;display:inline-block;direction:ltr;letter-spacing:1px}
+.cta-label{font-size:0.8rem;color:#6B7280;margin-bottom:6px}
+.price-discounted{font-size:1.3rem;font-weight:700;color:#E91E63}
+.price-original{text-decoration:line-through;color:#9CA3AF;font-size:0.9rem}
+.product-savings{font-size:0.85rem;color:#16A34A;font-weight:600;margin-bottom:10px}
+.product-price-section{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.product-tag{background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:12px;font-size:0.75rem}
+.product-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.validity-overlay{display:none}
+.icon{display:inline-block;vertical-align:-0.15em}
+</style>`;
+  return css + html;
+}
 
-  let m: RegExpExecArray | null;
-  while ((m = imgRegex.exec(html)) !== null) {
-    const url = m[2];
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      matches.push({ full: m[0], pre: m[1], url, post: m[3] });
-    }
-  }
-
-  if (matches.length === 0) return html;
-
-  // Fetch all images in parallel (max 10 to avoid overwhelming)
-  const results = await Promise.all(
-    matches.slice(0, 10).map(async ({ url }) => {
-      const img = await api.fetchImageAsBase64(url);
-      return { url, img };
-    }),
-  );
-
-  // Build a map of URL → data URI
-  const urlMap = new Map<string, string>();
-  for (const { url, img } of results) {
-    if (img) {
-      urlMap.set(url, `data:${img.mimeType};base64,${img.data}`);
-    }
-  }
-
-  // Replace in HTML
-  return html.replace(imgRegex, (full, pre: string, url: string, post: string) => {
-    const dataUri = urlMap.get(url);
-    return dataUri ? `${pre}${dataUri}${post}` : full;
-  });
+/** Full post-processing pipeline for card HTML. */
+function prepareCardHtml(html: string): string {
+  return addCardCSS(stripImages(stripLinks(html)));
 }
 
 // ---------------------------------------------------------------------------
@@ -245,7 +282,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatSearchResults(results) }],
-          _meta: { cardHtml: await inlineImages(stripLinks(renderSearchResultsBody(results)), api) },
+          _meta: { cardHtml: prepareCardHtml(renderSearchResultsBody(results)) },
         };
       } catch (err) {
         return handleToolError(err, 'search for deals');
@@ -322,7 +359,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatBrandPage(brandPage) }],
-          _meta: { cardHtml: await inlineImages(stripLinks(renderBrandPageBody(brandPage)), api) },
+          _meta: { cardHtml: prepareCardHtml(renderBrandPageBody(brandPage)) },
         };
       } catch (err) {
         return handleToolError(err, `get brand "${brand_slug}"`);
@@ -357,7 +394,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCampaignDetail(campaignPage) }],
-          _meta: { cardHtml: await inlineImages(stripLinks(renderCampaignDetailBody(campaignPage)), api) },
+          _meta: { cardHtml: prepareCardHtml(renderCampaignDetailBody(campaignPage)) },
         };
       } catch (err) {
         return handleToolError(err, `get campaign "${campaign_id}"`);
@@ -392,7 +429,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatProductDetail(productPage) }],
-          _meta: { cardHtml: await inlineImages(stripLinks(renderProductDetailBody(productPage)), api) },
+          _meta: { cardHtml: prepareCardHtml(renderProductDetailBody(productPage)) },
         };
       } catch (err) {
         return handleToolError(err, `get product "${product_id}"`);
@@ -426,7 +463,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCategoryPage(categoryPage) }],
-          _meta: { cardHtml: await inlineImages(stripLinks(renderCategoryPageBody(categoryPage)), api) },
+          _meta: { cardHtml: prepareCardHtml(renderCategoryPageBody(categoryPage)) },
         };
       } catch (err) {
         return handleToolError(err, `browse categories "${category_path}"`);
