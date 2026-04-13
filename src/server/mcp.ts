@@ -34,20 +34,45 @@ import config from '../utils/config.js';
 import logger from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
-// Helper: rewrite image URLs through our proxy server-side
+// Helper: inline images as base64 data URIs so they work inside sandboxed
+// iframes (Claude Desktop, ChatGPT) that block external image loading.
 // ---------------------------------------------------------------------------
 
-function proxyImageUrls(html: string, proxyBase: string): string {
-  return html.replace(
-    /(<img\s[^>]*\bsrc=")([^"]+)(")/gi,
-    (_match, pre: string, url: string, post: string) => {
-      // Only proxy absolute http(s) URLs that aren't already proxied
-      if ((url.startsWith('http://') || url.startsWith('https://')) && !url.includes('/img?url=')) {
-        return `${pre}${proxyBase}/img?url=${encodeURIComponent(url)}${post}`;
-      }
-      return _match;
-    },
+async function inlineImages(html: string, api: HiMamiApiClient): Promise<string> {
+  const imgRegex = /(<img\s[^>]*\bsrc=")([^"]+)(")/gi;
+  const matches: Array<{ full: string; pre: string; url: string; post: string }> = [];
+
+  let m: RegExpExecArray | null;
+  while ((m = imgRegex.exec(html)) !== null) {
+    const url = m[2];
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      matches.push({ full: m[0], pre: m[1], url, post: m[3] });
+    }
+  }
+
+  if (matches.length === 0) return html;
+
+  // Fetch all images in parallel (max 10 to avoid overwhelming)
+  const results = await Promise.all(
+    matches.slice(0, 10).map(async ({ url }) => {
+      const img = await api.fetchImageAsBase64(url);
+      return { url, img };
+    }),
   );
+
+  // Build a map of URL → data URI
+  const urlMap = new Map<string, string>();
+  for (const { url, img } of results) {
+    if (img) {
+      urlMap.set(url, `data:${img.mimeType};base64,${img.data}`);
+    }
+  }
+
+  // Replace in HTML
+  return html.replace(imgRegex, (full, pre: string, url: string, post: string) => {
+    const dataUri = urlMap.get(url);
+    return dataUri ? `${pre}${dataUri}${post}` : full;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -211,7 +236,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatSearchResults(results) }],
-          _meta: { cardHtml: proxyImageUrls(renderSearchResultsBody(results), proxyBase) },
+          _meta: { cardHtml: await inlineImages(renderSearchResultsBody(results), api) },
         };
       } catch (err) {
         return handleToolError(err, 'search for deals');
@@ -288,7 +313,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatBrandPage(brandPage) }],
-          _meta: { cardHtml: proxyImageUrls(renderBrandPageBody(brandPage), proxyBase) },
+          _meta: { cardHtml: await inlineImages(renderBrandPageBody(brandPage), api) },
         };
       } catch (err) {
         return handleToolError(err, `get brand "${brand_slug}"`);
@@ -323,7 +348,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCampaignDetail(campaignPage) }],
-          _meta: { cardHtml: proxyImageUrls(renderCampaignDetailBody(campaignPage), proxyBase) },
+          _meta: { cardHtml: await inlineImages(renderCampaignDetailBody(campaignPage), api) },
         };
       } catch (err) {
         return handleToolError(err, `get campaign "${campaign_id}"`);
@@ -358,7 +383,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatProductDetail(productPage) }],
-          _meta: { cardHtml: proxyImageUrls(renderProductDetailBody(productPage), proxyBase) },
+          _meta: { cardHtml: await inlineImages(renderProductDetailBody(productPage), api) },
         };
       } catch (err) {
         return handleToolError(err, `get product "${product_id}"`);
@@ -392,7 +417,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCategoryPage(categoryPage) }],
-          _meta: { cardHtml: proxyImageUrls(renderCategoryPageBody(categoryPage), proxyBase) },
+          _meta: { cardHtml: await inlineImages(renderCategoryPageBody(categoryPage), api) },
         };
       } catch (err) {
         return handleToolError(err, `browse categories "${category_path}"`);
