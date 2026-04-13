@@ -34,6 +34,15 @@ import config from '../utils/config.js';
 import logger from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
+// Helper: strip all <a> tags from card HTML — links don't work in sandboxed
+// iframes, so we remove them to avoid dead clicks.
+// ---------------------------------------------------------------------------
+
+function stripLinks(html: string): string {
+  return html.replace(/<a\b[^>]*>/gi, '').replace(/<\/a>/gi, '');
+}
+
+// ---------------------------------------------------------------------------
 // Helper: inline images as base64 data URIs so they work inside sandboxed
 // iframes (Claude Desktop, ChatGPT) that block external image loading.
 // ---------------------------------------------------------------------------
@@ -236,7 +245,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatSearchResults(results) }],
-          _meta: { cardHtml: await inlineImages(renderSearchResultsBody(results), api) },
+          _meta: { cardHtml: await inlineImages(stripLinks(renderSearchResultsBody(results)), api) },
         };
       } catch (err) {
         return handleToolError(err, 'search for deals');
@@ -313,7 +322,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatBrandPage(brandPage) }],
-          _meta: { cardHtml: await inlineImages(renderBrandPageBody(brandPage), api) },
+          _meta: { cardHtml: await inlineImages(stripLinks(renderBrandPageBody(brandPage)), api) },
         };
       } catch (err) {
         return handleToolError(err, `get brand "${brand_slug}"`);
@@ -348,7 +357,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCampaignDetail(campaignPage) }],
-          _meta: { cardHtml: await inlineImages(renderCampaignDetailBody(campaignPage), api) },
+          _meta: { cardHtml: await inlineImages(stripLinks(renderCampaignDetailBody(campaignPage)), api) },
         };
       } catch (err) {
         return handleToolError(err, `get campaign "${campaign_id}"`);
@@ -383,7 +392,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatProductDetail(productPage) }],
-          _meta: { cardHtml: await inlineImages(renderProductDetailBody(productPage), api) },
+          _meta: { cardHtml: await inlineImages(stripLinks(renderProductDetailBody(productPage)), api) },
         };
       } catch (err) {
         return handleToolError(err, `get product "${product_id}"`);
@@ -417,7 +426,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCategoryPage(categoryPage) }],
-          _meta: { cardHtml: await inlineImages(renderCategoryPageBody(categoryPage), api) },
+          _meta: { cardHtml: await inlineImages(stripLinks(renderCategoryPageBody(categoryPage)), api) },
         };
       } catch (err) {
         return handleToolError(err, `browse categories "${category_path}"`);

@@ -468,6 +468,7 @@ function formatCollectionItem(item: CollectionItem, lines: string[]): void {
       if (tier) meta.push(tier);
       const suffix = meta.length > 0 ? ` (${meta.join(', ')})` : '';
       lines.push(`  🎯 ${c.title.text}${suffix}`);
+      lines.push(`     🔗 https://hi-mami.com/campaigns/${c.id}`);
       break;
     }
     case 'PRODUCT_DETAILS': {
@@ -477,11 +478,13 @@ function formatCollectionItem(item: CollectionItem, lines: string[]): void {
       if (p.price?.discountPercent) meta.push(`-${p.price.discountPercent}%`);
       const suffix = meta.length > 0 ? ` (${meta.join(', ')})` : '';
       lines.push(`  📦 ${p.title.text}${suffix}`);
+      lines.push(`     🔗 https://hi-mami.com/products/${p.id}`);
       break;
     }
     case 'BRAND_METADATA': {
       const b = item.data as { title: { text: string }; slug: string };
       lines.push(`  🏷️ ${b.title.text}`);
+      lines.push(`     🔗 https://hi-mami.com/brands/${b.slug}`);
       break;
     }
     default:
