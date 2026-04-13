@@ -252,7 +252,7 @@ export function createMcpServer(api: HiMamiApiClient): McpServer {
     version: '1.0.0',
     title: 'Hi Mami - הטבות ומבצעים',
     description: 'Search deals, discounts, and offers on the Hi Mami platform',
-    icons: [{ src: 'https://www.hi-mami.com/images/mami_logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] }],
+    icons: [{ src: `${HIMAMI_BASE_URL}/images/mami_logo.svg`, mimeType: 'image/svg+xml', sizes: ['any'] }],
   });
   registerTools(server, api);
   return server;
@@ -620,7 +620,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
               c.discountPercentage ? `Discount: ${c.discountPercentage}%` : null,
               `Expires: ${c.expirationDate}`,
               `Tier: ${c.tierType}`,
-              `URL: ${HIMAMI_BASE_URL}/brands/${c.brandSlug}`,
+              `URL: ${HIMAMI_BASE_URL}/brands/${c.brandSlug}/?benefitid=${c.id}`,
             ].filter(Boolean).join('\n');
             break;
           }
@@ -633,7 +633,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
               p.price ? `Price: ${p.price.discountedPrice} ${p.price.currency} (was ${p.price.originPrice})` : null,
               p.price ? `Discount: ${p.price.discountPercent}%` : null,
               `Expires: ${p.expirationDate}`,
-              `URL: ${HIMAMI_BASE_URL}/brands/${p.brandSlug}`,
+              `URL: ${HIMAMI_BASE_URL}/brands/${p.brandSlug}/?benefitid=${p.id}`,
             ].filter(Boolean).join('\n');
             break;
           }
