@@ -146,7 +146,10 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
 
   // Demo API — renders HTML cards for the demo page
   router.get('/demo/api/{*path}', (req, res) => {
-    const path = '/' + (req.params.path ?? '');
+    // Express 5 {*path} may return an array — join with '/'
+    const rawPath = req.params.path;
+    const pathStr = Array.isArray(rawPath) ? rawPath.join('/') : String(rawPath ?? '');
+    const path = '/' + pathStr;
     const query = req.query as Record<string, string>;
     handleDemoApi(path, query, apiClient)
       .then((result) => res.json(result))

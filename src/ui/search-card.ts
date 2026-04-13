@@ -3,79 +3,15 @@ import { wrapInHtmlDoc } from './theme.js';
 
 export const searchCSS = `
   .search-header {
-    padding: 16px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--color-border);
   }
   .search-title {
-    font-size: 1.15rem;
+    font-size: 1rem;
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--color-text);
   }
   .search-subtitle {
-    font-size: 0.85rem;
-    color: var(--color-muted);
-    margin-top: 2px;
-  }
-  .search-group {
-    padding: 12px 16px;
-  }
-  .search-group-title {
-    font-size: 0.9rem;
-    font-weight: 700;
-    color: var(--color-accent);
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .search-group-count {
-    font-weight: 400;
-    color: var(--color-muted);
-    font-size: 0.8rem;
-  }
-  .search-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    border-radius: var(--border-radius-sm);
-    margin-bottom: 4px;
-    transition: background 0.15s;
-  }
-  .search-item:hover {
-    background: var(--color-bg-alt);
-  }
-  .search-item-img {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    object-fit: cover;
-    flex-shrink: 0;
-  }
-  .search-item-placeholder {
-    width: 48px;
-    height: 48px;
-    border-radius: 8px;
-    background: var(--color-secondary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    flex-shrink: 0;
-  }
-  .search-item-info {
-    flex: 1;
-    min-width: 0;
-  }
-  .search-item-title {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--color-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .search-item-meta {
     font-size: 0.8rem;
     color: var(--color-muted);
     margin-top: 2px;
@@ -89,6 +25,96 @@ export const searchCSS = `
     font-size: 2rem;
     margin-bottom: 8px;
   }
+  .deal-card {
+    border-bottom: 1px solid var(--color-border);
+    overflow: hidden;
+  }
+  .deal-card:last-child {
+    border-bottom: none;
+  }
+  .deal-hero {
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    display: block;
+  }
+  .deal-body {
+    padding: 12px 16px;
+  }
+  .deal-brand {
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .deal-brand-logo {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: contain;
+  }
+  .deal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+  .deal-description {
+    font-size: 0.85rem;
+    color: var(--color-muted);
+    line-height: 1.4;
+    margin-bottom: 8px;
+  }
+  .deal-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .deal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--color-muted);
+    padding-top: 6px;
+    border-top: 1px solid var(--color-border);
+  }
+  .brand-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .brand-row-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: contain;
+    flex-shrink: 0;
+    background: rgba(128,128,128,0.08);
+  }
+  .brand-row-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .brand-row-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--color-text);
+  }
+  .brand-row-desc {
+    font-size: 0.8rem;
+    color: var(--color-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 function extractTitle(item: Record<string, unknown>): string {
@@ -97,62 +123,109 @@ function extractTitle(item: Record<string, unknown>): string {
 }
 
 function extractImage(item: Record<string, unknown>): string | null {
-  const logo = item.logo as { url?: string } | undefined;
   const mainMedia = item.mainMedia as { url?: string } | undefined;
+  const logo = item.logo as { url?: string } | undefined;
   const image = item.image as { url?: string } | undefined;
-  return logo?.url ?? mainMedia?.url ?? image?.url ?? null;
+  return mainMedia?.url ?? logo?.url ?? image?.url ?? null;
 }
 
-function renderGroup(
-  icon: string,
-  label: string,
-  items: unknown[],
-  totalCount: number,
-  typeLabel: string,
-): string {
-  if (items.length === 0) return '';
+function extractDescription(item: Record<string, unknown>): string | null {
+  const displayStrings = item.displayStrings as Array<{ type: string; value: { text: string } }> | undefined;
+  if (!displayStrings) return null;
+  const desc = displayStrings.find((d) => d.type === 'DESCRIPTION' || d.type === 'SUBTITLE');
+  return desc?.value?.text ?? null;
+}
 
-  const rows = items.map((raw) => {
-    const item = raw as Record<string, unknown>;
-    const title = extractTitle(item);
-    const imgUrl = extractImage(item);
-    const slug = item.slug as string | undefined;
-    const id = item.id as string | undefined;
+function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('he-IL', { day: 'numeric', month: 'numeric', year: '2-digit' });
+  } catch {
+    return iso;
+  }
+}
 
-    const meta: string[] = [];
-    if (item.discountPercentage) meta.push(`${item.discountPercentage}% הנחה`);
-    if (item.expirationTag === 'ENDS_TODAY') meta.push('מסתיים היום!');
-    else if (item.expirationTag === 'ENDS_TOMORROW') meta.push('מסתיים מחר');
-    if (item.tierType === 'MAMI_PLUS') meta.push('מאמי פלוס');
-    if (item.tierType === 'MAMI_PLUS_EXCLUSIVE') meta.push('בלעדי למאמי פלוס');
+function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'product'): string {
+  const title = extractTitle(item);
+  const imgUrl = extractImage(item);
+  const description = extractDescription(item);
 
-    const price = item.price as { discountedPrice?: number; currency?: string; discountPercent?: number } | undefined;
-    if (price) {
-      meta.push(`${price.discountedPrice} ${price.currency ?? '₪'}`);
-      if (price.discountPercent) meta.push(`-${price.discountPercent}%`);
+  const heroHtml = imgUrl
+    ? `<img class="deal-hero" src="${imgUrl}" alt="${title}">`
+    : '';
+
+  // Badges
+  const badges: string[] = [];
+  const discountPct = item.discountPercentage as number | undefined;
+  const tierType = item.tierType as string | undefined;
+  const expirationTag = item.expirationTag as string | undefined;
+  const campaignTypeLabel = item.campaignTypeLabel as string | undefined;
+
+  if (discountPct) {
+    badges.push(`<span class="badge badge-discount">${discountPct}% הנחה</span>`);
+  } else if (campaignTypeLabel === 'GIFT') {
+    badges.push(`<span class="badge badge-gift">🎁 מתנה</span>`);
+  }
+
+  if (tierType === 'MAMI_PLUS') {
+    badges.push(`<span class="badge badge-mami-plus">⭐ מאמי פלוס</span>`);
+  } else if (tierType === 'MAMI_PLUS_EXCLUSIVE') {
+    badges.push(`<span class="badge badge-exclusive">👑 בלעדי למאמי פלוס</span>`);
+  }
+
+  if (expirationTag === 'ENDS_TODAY') {
+    badges.push(`<span class="badge badge-ends-today">⏰ מסתיים היום!</span>`);
+  } else if (expirationTag === 'ENDS_TOMORROW') {
+    badges.push(`<span class="badge badge-ends-tomorrow">⏰ מסתיים מחר</span>`);
+  }
+
+  // Price (products)
+  const price = item.price as { discountedPrice?: number; currency?: string; discountPercent?: number } | undefined;
+  let priceHtml = '';
+  if (price) {
+    priceHtml = `<span class="price-discounted">${price.discountedPrice} ${price.currency ?? '₪'}</span>`;
+    if (price.discountPercent) {
+      badges.push(`<span class="badge badge-discount">${price.discountPercent}% הנחה</span>`);
     }
+  }
 
-    const imgHtml = imgUrl
-      ? `<img class="search-item-img" src="${imgUrl}" alt="${title}">`
-      : `<div class="search-item-placeholder">${icon}</div>`;
+  // Brand info
+  const brandSlug = item.brandSlug as string | undefined;
+  const brandName = brandSlug ?? '';
 
-    const identifier = slug ?? id ?? '';
+  // Expiration
+  const expirationDate = item.expirationDate as string | undefined;
+  const footerHtml = expirationDate
+    ? `<div class="deal-footer"><span>📅 עד ${formatDate(expirationDate)}</span>${priceHtml}</div>`
+    : priceHtml ? `<div class="deal-footer"><span></span>${priceHtml}</div>` : '';
 
-    return `<div class="search-item" data-type="${typeLabel}" data-id="${identifier}">
-      ${imgHtml}
-      <div class="search-item-info">
-        <div class="search-item-title">${title}</div>
-        ${meta.length > 0 ? `<div class="search-item-meta">${meta.join(' · ')}</div>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-
-  return `<div class="search-group">
-    <div class="search-group-title">
-      ${icon} ${label}
-      <span class="search-group-count">(${totalCount})</span>
+  return `<div class="deal-card">
+    ${heroHtml}
+    <div class="deal-body">
+      ${brandName ? `<div class="deal-brand">${brandName}</div>` : ''}
+      ${badges.length > 0 ? `<div class="deal-badges">${badges.join('')}</div>` : ''}
+      <div class="deal-title">${title}</div>
+      ${description ? `<div class="deal-description">${description}</div>` : ''}
+      ${footerHtml}
     </div>
-    ${rows}
+  </div>`;
+}
+
+function renderBrandRow(item: Record<string, unknown>): string {
+  const title = extractTitle(item);
+  const logoUrl = (item.logo as { url?: string } | undefined)?.url;
+  const description = extractDescription(item);
+
+  const logoHtml = logoUrl
+    ? `<img class="brand-row-logo" src="${logoUrl}" alt="${title}">`
+    : '';
+
+  return `<div class="brand-row">
+    ${logoHtml}
+    <div class="brand-row-info">
+      <div class="brand-row-name">${title}</div>
+      ${description ? `<div class="brand-row-desc">${description}</div>` : ''}
+    </div>
   </div>`;
 }
 
@@ -170,19 +243,30 @@ export function renderSearchResultsBody(results: SearchResults): string {
     </div>`;
   }
 
-  const header = `<div class="search-header">
-    <div class="search-title">🔍 נמצאו ${totalResults} תוצאות עבור "${results.query}"</div>
-    <div class="search-subtitle">Hi Mami מבצעים והטבות</div>
-  </div>`;
+  const parts: string[] = [];
 
-  const groups = [
-    renderGroup('🏷️', 'מותגים', results.brands.items, results.brands.totalCount, 'brand'),
-    renderGroup('🎯', 'מבצעים', results.campaigns.items, results.campaigns.totalCount, 'campaign'),
-    renderGroup('📦', 'מוצרים', results.products.items, results.products.totalCount, 'product'),
-    renderGroup('📂', 'קטגוריות', results.categories.items, results.categories.totalCount, 'category'),
-  ].filter(Boolean).join('<hr class="card-divider">');
+  // Header
+  parts.push(`<div class="search-header">
+    <div class="search-title">תוצאות חיפוש: "${results.query}"</div>
+    <div class="search-subtitle">${totalResults} תוצאות ב-Hi Mami</div>
+  </div>`);
 
-  return header + groups;
+  // Campaigns — rendered as rich deal cards with hero images
+  for (const raw of results.campaigns.items) {
+    parts.push(renderDealCard(raw as Record<string, unknown>, 'campaign'));
+  }
+
+  // Products — rendered as rich deal cards
+  for (const raw of results.products.items) {
+    parts.push(renderDealCard(raw as Record<string, unknown>, 'product'));
+  }
+
+  // Brands — compact rows with logo
+  for (const raw of results.brands.items) {
+    parts.push(renderBrandRow(raw as Record<string, unknown>));
+  }
+
+  return parts.join('');
 }
 
 export function renderSearchResultsCard(results: SearchResults): string {
