@@ -1,5 +1,5 @@
 import type { SearchResults } from '../types/index.js';
-import { wrapInHtmlDoc, hiMamiUrl, formatDate } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, formatDate, escapeHtml, icon } from './theme.js';
 import { getTierBadge } from './campaign-card.js';
 
 export const searchCSS = `
@@ -21,10 +21,6 @@ export const searchCSS = `
     text-align: center;
     padding: 32px 16px;
     color: var(--color-muted);
-  }
-  .search-empty-icon {
-    font-size: 2rem;
-    margin-bottom: 8px;
   }
   .deal-card {
     border-bottom: 1px solid var(--color-border);
@@ -76,6 +72,7 @@ export const searchCSS = `
     color: var(--color-muted);
     line-height: 1.4;
     margin-bottom: 8px;
+    max-width: 60ch;
   }
   .deal-badges {
     display: flex;
@@ -172,7 +169,7 @@ function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'produ
     const overlayHtml = expirationDate && expirationTag !== 'ENDED'
       ? `<span class="validity-overlay">בתוקף עד ${formatDate(expirationDate)}</span>`
       : '';
-    heroHtml = `<div class="deal-hero-wrap"><img class="deal-hero" src="${imgUrl}" alt="${title}">${overlayHtml}</div>`;
+    heroHtml = `<div class="deal-hero-wrap"><img class="deal-hero" src="${imgUrl}" alt="${escapeHtml(title)}">${overlayHtml}</div>`;
   }
 
   // Badges — max 2 to keep it clean
@@ -187,16 +184,16 @@ function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'produ
   } else if (price?.discountPercent) {
     badges.push(`<span class="badge badge-discount">${price.discountPercent}% הנחה</span>`);
   } else if (campaignTypeLabel === 'GIFT') {
-    badges.push(`<span class="badge badge-gift">🎁 מתנה</span>`);
+    badges.push(`<span class="badge badge-gift">${icon('gift')} מתנה</span>`);
   }
 
   const tierBadge = getTierBadge((tierType ?? 'STANDARD') as 'STANDARD' | 'MAMI_PLUS' | 'MAMI_PLUS_EXCLUSIVE');
   if (tierBadge) badges.push(tierBadge);
 
   if (expirationTag === 'ENDS_TODAY') {
-    badges.push(`<span class="badge badge-ends-today">⏰ מסתיים היום!</span>`);
+    badges.push(`<span class="badge badge-ends-today">${icon('clock')} מסתיים היום!</span>`);
   } else if (expirationTag === 'ENDS_TOMORROW') {
-    badges.push(`<span class="badge badge-ends-tomorrow">⏰ מסתיים מחר</span>`);
+    badges.push(`<span class="badge badge-ends-tomorrow">${icon('clock')} מסתיים מחר</span>`);
   }
 
   // Price
@@ -209,7 +206,7 @@ function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'produ
   // Footer with price + link
   const entityUrl = id ? hiMamiUrl(type, id) : null;
   const linkHtml = entityUrl
-    ? `<div class="deal-footer-link"><a class="entity-link" href="${entityUrl}" target="_blank" rel="noopener">לפרטים ←</a></div>`
+    ? `<div class="deal-footer-link"><a class="entity-link" href="${entityUrl}" target="_blank" rel="noopener" aria-label="${escapeHtml(title)} - לפרטים">לפרטים ←</a></div>`
     : '';
 
   const footerHtml = priceHtml
@@ -219,10 +216,10 @@ function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'produ
   return `<div class="deal-card">
     ${heroHtml}
     <div class="deal-body">
-      ${brandName ? `<div class="deal-brand">${brandName}</div>` : ''}
+      ${brandName ? `<div class="deal-brand">${escapeHtml(brandName)}</div>` : ''}
       ${badges.length > 0 ? `<div class="deal-badges">${badges.join('')}</div>` : ''}
-      <div class="deal-title">${title}</div>
-      ${description ? `<div class="deal-description">${description}</div>` : ''}
+      <div class="deal-title">${escapeHtml(title)}</div>
+      ${description ? `<div class="deal-description">${escapeHtml(description)}</div>` : ''}
       ${footerHtml}
       ${linkHtml}
     </div>
@@ -236,7 +233,7 @@ function renderBrandRow(item: Record<string, unknown>): string {
   const description = extractDescription(item);
 
   const logoHtml = logoUrl
-    ? `<img class="brand-row-logo" src="${logoUrl}" alt="${title}">`
+    ? `<img class="brand-row-logo" src="${logoUrl}" alt="${escapeHtml(title)}">`
     : '';
 
   const brandUrl = slug ? hiMamiUrl('brand', slug) : null;
@@ -244,10 +241,10 @@ function renderBrandRow(item: Record<string, unknown>): string {
   return `<div class="brand-row">
     ${logoHtml}
     <div class="brand-row-info">
-      <div class="brand-row-name">${title}</div>
-      ${description ? `<div class="brand-row-desc">${description}</div>` : ''}
+      <div class="brand-row-name">${escapeHtml(title)}</div>
+      ${description ? `<div class="brand-row-desc">${escapeHtml(description)}</div>` : ''}
     </div>
-    ${brandUrl ? `<a class="entity-link" href="${brandUrl}" target="_blank" rel="noopener">←</a>` : ''}
+    ${brandUrl ? `<a class="entity-link" href="${brandUrl}" target="_blank" rel="noopener" aria-label="${escapeHtml(title)} - לפרטים">←</a>` : ''}
   </div>`;
 }
 
@@ -260,7 +257,7 @@ export function renderSearchResultsBody(results: SearchResults): string {
 
   if (totalResults === 0) {
     return `<div class="search-empty">
-      <div>לא נמצאו תוצאות עבור "${results.query}"</div>
+      <div>לא נמצאו תוצאות עבור "${escapeHtml(results.query)}"</div>
     </div>`;
   }
 
@@ -268,7 +265,7 @@ export function renderSearchResultsBody(results: SearchResults): string {
 
   // Header
   parts.push(`<div class="search-header">
-    <div class="search-title">תוצאות חיפוש: "${results.query}"</div>
+    <div class="search-title">תוצאות חיפוש: "${escapeHtml(results.query)}"</div>
     <div class="search-subtitle">${totalResults} תוצאות ב-Hi Mami</div>
   </div>`);
 

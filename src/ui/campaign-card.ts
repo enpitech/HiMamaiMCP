@@ -1,5 +1,5 @@
 import type { CampaignPage, ConversionAction, DisplayString, ExpirationTag, TierType, CampaignTypeLabel } from '../types/index.js';
-import { wrapInHtmlDoc, hiMamiUrl, formatDate } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, formatDate, escapeHtml, icon } from './theme.js';
 
 export const campaignCSS = `
   .campaign-card {
@@ -66,6 +66,7 @@ export const campaignCSS = `
     color: var(--color-muted);
     margin-bottom: 12px;
     line-height: 1.5;
+    max-width: 60ch;
   }
   .campaign-meta {
     display: flex;
@@ -108,13 +109,13 @@ export function getExpirationBadge(tag: ExpirationTag, date: string): string {
   const formatted = formatDate(date);
   switch (tag) {
     case 'ENDS_TODAY':
-      return `<span class="badge badge-ends-today">⏰ מסתיים היום!</span>`;
+      return `<span class="badge badge-ends-today">${icon('clock')} מסתיים היום!</span>`;
     case 'ENDS_TOMORROW':
-      return `<span class="badge badge-ends-tomorrow">⏰ מסתיים מחר</span>`;
+      return `<span class="badge badge-ends-tomorrow">${icon('clock')} מסתיים מחר</span>`;
     case 'ENDS_ON':
-      return `<span class="badge badge-discount">📅 בתוקף עד ${formatted}</span>`;
+      return `<span class="badge badge-discount">${icon('calendar')} בתוקף עד ${formatted}</span>`;
     case 'STARTS_ON':
-      return `<span class="badge badge-offer">🔔 מתחיל ב-${formatted}</span>`;
+      return `<span class="badge badge-offer">${icon('bell')} מתחיל ב-${formatted}</span>`;
     case 'ENDED':
       return `<span class="badge badge-ended">הסתיים</span>`;
     default:
@@ -140,7 +141,7 @@ export function getTypeBadge(label: CampaignTypeLabel, discountPct: number | nul
         ? `<span class="badge badge-discount">${discountPct}% הנחה</span>`
         : `<span class="badge badge-discount">הנחה</span>`;
     case 'GIFT':
-      return `<span class="badge badge-gift">🎁 מתנה</span>`;
+      return `<span class="badge badge-gift">${icon('gift')} מתנה</span>`;
     case 'COMBO':
       return `<span class="badge badge-discount">קומבו</span>`;
     case 'OFFER':
@@ -153,7 +154,7 @@ export function getTypeBadge(label: CampaignTypeLabel, discountPct: number | nul
 export function renderConversionAction(action: ConversionAction): string {
   const displayStringsHtml = action.displayStrings
     .filter((d) => ['CTA', 'CTA_HEADER', 'CTA_SUBTITLE', 'CTA_REDEMPTION_DETAILS'].includes(d.type))
-    .map((d) => `<p>${d.value.text}</p>`)
+    .map((d) => `<p>${escapeHtml(d.value.text)}</p>`)
     .join('');
 
   let ctaContent = '';
@@ -163,7 +164,7 @@ export function renderConversionAction(action: ConversionAction): string {
     case 'PERSONAL_CODE': {
       const data = action.data as { codes?: Array<{ code: string }>; url?: string } | null;
       if (data?.codes && data.codes.length > 0) {
-        const codesList = data.codes.map((c) => `<span class="cta-code">${c.code}</span>`).join(' ');
+        const codesList = data.codes.map((c) => `<span class="cta-code">${escapeHtml(c.code)}</span>`).join(' ');
         ctaContent = `<div class="cta-label">קוד:</div>${codesList}`;
       }
       break;
@@ -182,28 +183,28 @@ export function renderConversionAction(action: ConversionAction): string {
     case 'CALL_TO_NUMBER': {
       const data = action.data as { phoneNumber?: string } | null;
       if (data?.phoneNumber) {
-        ctaContent = `<div class="cta-label">📞 טלפון: <span class="ltr-inline">${data.phoneNumber}</span></div>`;
+        ctaContent = `<div class="cta-label">${icon('phone')} טלפון: <span class="ltr-inline">${escapeHtml(data.phoneNumber)}</span></div>`;
       }
       break;
     }
     case 'VOUCHER': {
       const data = action.data as { code?: string } | null;
       if (data?.code) {
-        ctaContent = `<div class="cta-label">שובר:</div><span class="cta-code">${data.code}</span>`;
+        ctaContent = `<div class="cta-label">שובר:</div><span class="cta-code">${escapeHtml(data.code)}</span>`;
       }
       break;
     }
     case 'SET_REMINDER':
-      ctaContent = `<div class="cta-label">🔔 ניתן להגדיר תזכורת באתר</div>`;
+      ctaContent = `<div class="cta-label">${icon('bell')} ניתן להגדיר תזכורת באתר</div>`;
       break;
     case 'OUT_OF_STOCK':
-      ctaContent = `<div class="cta-label">⚠️ אזל מהמלאי</div>`;
+      ctaContent = `<div class="cta-label">${icon('alert')} אזל מהמלאי</div>`;
       break;
   }
 
   if (action.isPurchasable && action.catalogItem) {
     const { price, currency } = action.catalogItem;
-    ctaContent += `<div style="margin-top:8px;font-size:0.85rem;color:var(--color-muted)">💰 מחיר: ${price} ${currency}</div>`;
+    ctaContent += `<div style="margin-top:8px;font-size:0.85rem;color:var(--color-muted)">${icon('coins')} מחיר: ${price} ${escapeHtml(currency)}</div>`;
   }
 
   return `<div class="cta-section">
@@ -224,7 +225,7 @@ export function renderCampaignDetailBody(page: CampaignPage): string {
   const brand = page.brandMetadata;
 
   const brandLogoHtml = brand.logo?.url
-    ? `<img class="campaign-brand-logo" src="${brand.logo.url}" alt="${brand.title.text}">`
+    ? `<img class="campaign-brand-logo" src="${brand.logo.url}" alt="${escapeHtml(brand.title.text)}">`
     : '';
 
   const brandUrl = hiMamiUrl('brand', brand.slug);
@@ -236,7 +237,7 @@ export function renderCampaignDetailBody(page: CampaignPage): string {
     const overlayHtml = c.expirationTag !== 'ENDED'
       ? `<span class="validity-overlay">בתוקף עד ${formatDate(c.expirationDate)}</span>`
       : '';
-    heroHtml = `<div class="campaign-hero-wrap"><img class="campaign-hero" src="${c.mainMedia.url}" alt="${c.title.text}">${overlayHtml}</div>`;
+    heroHtml = `<div class="campaign-hero-wrap"><img class="campaign-hero" src="${c.mainMedia.url}" alt="${escapeHtml(c.title.text)}">${overlayHtml}</div>`;
   }
 
   const badges = [
@@ -253,24 +254,24 @@ export function renderCampaignDetailBody(page: CampaignPage): string {
 
   const smallPrint = c.displayStrings
     .filter((d) => d.type === 'SMALL_PRINT' || d.type === 'DISCLAIMER' || d.type === 'CARD_SMALL_PRINT')
-    .map((d) => d.value.text);
+    .map((d) => escapeHtml(d.value.text));
 
   const body = `<div class="campaign-card">
     <div class="campaign-brand-bar">
       ${brandLogoHtml}
-      <span class="campaign-brand-name"><a class="heading-link" href="${brandUrl}" target="_blank" rel="noopener">${brand.title.text}</a></span>
+      <span class="campaign-brand-name"><a class="heading-link" href="${brandUrl}" target="_blank" rel="noopener">${escapeHtml(brand.title.text)}</a></span>
     </div>
     ${heroHtml}
     <div class="campaign-body">
       <div class="campaign-badges">${badges}</div>
-      <div class="campaign-title">${c.title.text}</div>
-      ${description ? `<div class="campaign-description">${description}</div>` : ''}
+      <div class="campaign-title">${escapeHtml(c.title.text)}</div>
+      ${description ? `<div class="campaign-description">${escapeHtml(description)}</div>` : ''}
       ${ctaHtml}
       <div class="campaign-meta">
         <span class="campaign-meta-item">${formatDate(c.startDate)} — ${formatDate(c.expirationDate)}</span>
       </div>
       ${smallPrint.length > 0 ? `<div style="margin-top:8px;font-size:0.75rem;color:var(--color-text-light)">${smallPrint.join(' · ')}</div>` : ''}
-      <div class="campaign-footer-link"><a class="entity-link" href="${campaignUrl}" target="_blank" rel="noopener">צפייה באתר ←</a></div>
+      <div class="campaign-footer-link"><a class="entity-link" href="${campaignUrl}" target="_blank" rel="noopener" aria-label="${escapeHtml(c.title.text)} - צפייה באתר">צפייה באתר ←</a></div>
     </div>
   </div>`;
 

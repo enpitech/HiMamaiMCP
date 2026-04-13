@@ -61,6 +61,58 @@ const TOOL_ANNOTATIONS = {
   openWorldHint: true,
 } as const;
 
+// ---------------------------------------------------------------------------
+// Tool call logging wrapper
+// ---------------------------------------------------------------------------
+
+function withToolLogging<TArgs, TResult>(
+  toolName: string,
+  handler: (args: TArgs) => Promise<TResult>,
+): (args: TArgs) => Promise<TResult> {
+  return async (args: TArgs) => {
+    const startTime = Date.now();
+    logger.info({ event: 'mcp.tool.call', tool: toolName, input: args }, `Tool call: ${toolName}`);
+
+    try {
+      const result = await handler(args);
+      const durationMs = Date.now() - startTime;
+
+      const r = result as unknown as Record<string, unknown>;
+      const content = r.content as Array<{ type: string; text?: string }> | undefined;
+      const meta = r._meta as Record<string, unknown> | undefined;
+      const textLen = content?.find(c => c.type === 'text')?.text?.length ?? 0;
+      const cardLen = meta?.cardHtml ? String(meta.cardHtml).length : 0;
+      const isError = Boolean(r.isError);
+
+      const logData = {
+        event: isError ? 'mcp.tool.error_result' : 'mcp.tool.success',
+        tool: toolName,
+        durationMs,
+        success: !isError,
+        resultTextLength: textLen,
+        resultCardLength: cardLen,
+      };
+
+      if (isError) {
+        logger.warn(logData, `Tool ${toolName} error result (${durationMs}ms)`);
+      } else {
+        logger.info(logData, `Tool ${toolName} OK (${durationMs}ms, text=${textLen}b, card=${cardLen}b)`);
+      }
+
+      return result;
+    } catch (err) {
+      const durationMs = Date.now() - startTime;
+      logger.error({
+        event: 'mcp.tool.exception',
+        tool: toolName,
+        durationMs,
+        error: err instanceof Error ? err.message : String(err),
+      }, `Tool ${toolName} exception (${durationMs}ms)`);
+      throw err;
+    }
+  };
+}
+
 /** Create a fully configured McpServer with all tools and resources registered. */
 export function createMcpServer(api: HiMamiApiClient): McpServer {
   const server = new McpServer({ name: 'himami', version: '1.0.0' });
@@ -147,7 +199,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
           .describe('Max results per group (default: 10)'),
       },
     },
-    async ({ query, type, limit }) => {
+    withToolLogging('search_deals', async ({ query, type, limit }) => {
       try {
         const results = await api.search(query, type, limit);
 
@@ -158,7 +210,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       } catch (err) {
         return handleToolError(err, 'search for deals');
       }
-    },
+    }),
   );
 
   // -------------------------------------------------------------------------
@@ -177,7 +229,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         limit: z.number().optional().default(5).describe('Max number of suggestions'),
       },
     },
-    async ({ query, limit }) => {
+    withToolLogging('get_suggestions', async ({ query, limit }) => {
       try {
         const results = await api.suggestions(query, limit);
 
@@ -194,7 +246,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       } catch (err) {
         return handleToolError(err, 'get suggestions');
       }
-    },
+    }),
   );
 
   // -------------------------------------------------------------------------
@@ -219,7 +271,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         page_size: z.number().optional().default(20).describe('Items per page (max 100)'),
       },
     },
-    async ({ brand_slug, page, page_size }) => {
+    withToolLogging('get_brand', async ({ brand_slug, page, page_size }) => {
       try {
         const brandPage = await api.getBrand(brand_slug);
 
@@ -235,7 +287,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       } catch (err) {
         return handleToolError(err, `get brand "${brand_slug}"`);
       }
-    },
+    }),
   );
 
   // -------------------------------------------------------------------------
@@ -259,7 +311,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         campaign_id: z.string().describe('Campaign ID (returned by search or brand page)'),
       },
     },
-    async ({ campaign_id }) => {
+    withToolLogging('get_campaign', async ({ campaign_id }) => {
       try {
         const campaignPage = await api.getCampaign(campaign_id);
 
@@ -270,7 +322,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       } catch (err) {
         return handleToolError(err, `get campaign "${campaign_id}"`);
       }
-    },
+    }),
   );
 
   // -------------------------------------------------------------------------
@@ -294,7 +346,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         product_id: z.string().describe('Product ID (returned by search or campaign page)'),
       },
     },
-    async ({ product_id }) => {
+    withToolLogging('get_product', async ({ product_id }) => {
       try {
         const productPage = await api.getProduct(product_id);
 
@@ -305,7 +357,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       } catch (err) {
         return handleToolError(err, `get product "${product_id}"`);
       }
-    },
+    }),
   );
 
   // -------------------------------------------------------------------------
@@ -328,7 +380,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
           .describe('Category path, e.g. "fashion", "fashion/women". Empty = root categories'),
       },
     },
-    async ({ category_path }) => {
+    withToolLogging('browse_categories', async ({ category_path }) => {
       try {
         const categoryPage = await api.getCategories(category_path ?? '');
 
@@ -339,7 +391,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       } catch (err) {
         return handleToolError(err, `browse categories "${category_path}"`);
       }
-    },
+    }),
   );
 
   // -------------------------------------------------------------------------
@@ -355,7 +407,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         query: z.string().describe('Search query, e.g. "nike deals", "baby product discounts"'),
       },
     },
-    async ({ query }) => {
+    withToolLogging('search', async ({ query }) => {
       try {
         const results = await api.search(query);
         const allItems = [
@@ -384,7 +436,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       } catch (err) {
         return handleToolError(err, 'search');
       }
-    },
+    }),
   );
 
   // -------------------------------------------------------------------------
@@ -401,7 +453,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         id: z.string().describe('ID or slug of the entity'),
       },
     },
-    async ({ entity_type, id }) => {
+    withToolLogging('fetch', async ({ entity_type, id }) => {
       try {
         let text: string;
 
@@ -453,7 +505,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
       } catch (err) {
         return handleToolError(err, `fetch ${entity_type}`);
       }
-    },
+    }),
   );
 }
 

@@ -25,18 +25,47 @@ export function formatDate(iso: string): string {
   }
 }
 
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+export function icon(name: string, size = 14): string {
+  const paths: Record<string, string> = {
+    clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><rect x="5" y="12" width="14" height="8" rx="1"/><path d="M12 8v12M12 8c-2-4-6-4-6-1s4 1 6 1M12 8c2-4 6-4 6-1s-4 1-6 1"/>',
+    calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+    phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.97.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+    alert: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
+    coins: '<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h.01M16 12h.01"/>',
+    tag: '<path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2"/><path d="M7 7h.01"/>',
+    target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+    package: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
+    folder: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>',
+    star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  };
+  const path = paths[name];
+  if (!path) return '';
+  return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+}
+
 export function generateBaseCSS(): string {
   return `
     :root {
       --color-primary: #E91E63;
       --color-primary-dark: #C2185B;
+      --color-accent: #AD1457;
       --color-secondary: rgba(233,30,99,0.1);
       --color-success: #4ADE80;
       --color-warning: #FBBF24;
       --color-danger: #F87171;
-      --color-muted: rgba(160,160,160,0.65);
+      --color-muted: rgba(180,180,180,0.85);
       --color-text: rgba(220,220,220,0.9);
-      --color-text-light: rgba(160,160,160,0.7);
+      --color-text-light: rgba(190,190,190,0.9);
       --color-bg: transparent;
       --color-bg-alt: rgba(128,128,128,0.06);
       --color-border: rgba(128,128,128,0.15);
@@ -52,8 +81,9 @@ export function generateBaseCSS(): string {
 
     [data-theme="light"] {
       --color-text: #333333;
-      --color-text-light: #666666;
-      --color-muted: #888888;
+      --color-text-light: #555555;
+      --color-muted: #636363;
+      --color-accent: #880E4F;
       --color-bg-alt: #F5F5F5;
       --color-border: #EEEEEE;
       --color-card-bg: #FFFFFF;
@@ -82,7 +112,7 @@ export function generateBaseCSS(): string {
       direction: rtl;
       text-align: right;
       line-height: 1.5;
-      font-size: 14px;
+      font-size: 15px;
     }
 
     img {
@@ -252,6 +282,86 @@ export function generateBaseCSS(): string {
       direction: ltr;
       unicode-bidi: embed;
     }
+
+    .icon {
+      display: inline-block;
+      vertical-align: -0.15em;
+      flex-shrink: 0;
+    }
+
+    a, .entity-link, .cta-action-link {
+      cursor: pointer;
+      transition: color 0.2s ease-out, background-color 0.2s ease-out, opacity 0.2s ease-out;
+    }
+
+    a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    .cta-action-link:hover {
+      background: var(--color-primary-dark);
+    }
+
+    .deal-card, .brand-row, .brand-deal-item, .category-item, .home-grid-item {
+      cursor: pointer;
+      transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out, transform 0.2s ease-out;
+    }
+
+    .deal-card:hover, .brand-row:hover, .brand-deal-item:hover, .category-item:hover {
+      background: var(--color-bg-alt);
+    }
+
+    .home-grid-item:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .home-items-grid, .home-highlights {
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .home-grid-item, .home-highlight {
+      scroll-snap-align: start;
+    }
+
+    .campaign-card, .product-card, .brand-card, .category-card, .home-card {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --color-text: #333333;
+        --color-text-light: #555555;
+        --color-muted: #636363;
+        --color-accent: #880E4F;
+        --color-bg-alt: #F5F5F5;
+        --color-border: #EEEEEE;
+        --color-card-bg: #FFFFFF;
+        --color-mami-plus: #E6A000;
+        --color-mami-plus-bg: rgba(255,179,0,0.08);
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+        --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
+      }
+    }
+
+    @media (max-width: 400px) {
+      .home-grid-item { width: 120px; }
+      .brand-deal-img { width: 60px; height: 45px; }
+      .campaign-hero { max-height: 160px; }
+      .product-hero { max-height: 200px; }
+      .brand-hero { height: 120px; }
+    }
   `;
 }
 
@@ -299,21 +409,13 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://hi-mami
 
   function proxyImages(){
     var imgs=app.querySelectorAll("img[src]");
-    var count=imgs.length,loaded=0,failed=0;
     for(var i=0;i<imgs.length;i++){
       var src=imgs[i].getAttribute("src");
       if(src&&(src.indexOf("http://")===0||src.indexOf("https://")===0)&&src.indexOf(PROXY_BASE)===-1){
         imgs[i].setAttribute("src",PROXY_BASE+encodeURIComponent(src));
       }
-      imgs[i].onload=function(){loaded++;updateDebug(count,loaded,failed);};
-      imgs[i].onerror=function(){failed++;this.style.opacity="0.3";this.style.minHeight="20px";this.style.background="rgba(255,0,0,0.1)";updateDebug(count,loaded,failed);};
+      imgs[i].onerror=function(){this.style.opacity="0.3";this.style.minHeight="20px";this.style.background="rgba(128,128,128,0.1)";};
     }
-    updateDebug(count,loaded,failed);
-  }
-  function updateDebug(total,ok,fail){
-    var el=document.getElementById("_dbg");
-    if(!el){el=document.createElement("div");el.id="_dbg";el.style.cssText="position:fixed;bottom:0;left:0;right:0;padding:2px 6px;font-size:10px;background:rgba(0,0,0,0.7);color:#aaa;z-index:9999;text-align:left;direction:ltr;";app.parentNode.appendChild(el);}
-    el.textContent="imgs: "+total+" | loaded: "+ok+" | failed: "+fail;
   }
 
   window.addEventListener("message",function(e){

@@ -5,7 +5,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import type { HiMamiApiClient } from '../services/himami-api.js';
 import { registerTools } from './mcp.js';
 import { getDemoPageHtml, handleDemoApi } from './demo.js';
-import logger from '../utils/logger.js';
+import logger, { detectClient } from '../utils/logger.js';
 
 // In-memory session store for SSE transports (one per live connection)
 const sseTransports = new Map<string, SSEServerTransport>();
@@ -77,16 +77,34 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
     registerTools(server, apiClient);
 
     const transport = new SSEServerTransport('/mcp/sse', res);
-    sseTransports.set(transport.sessionId, transport);
+    const sessionId = transport.sessionId;
+    const client = detectClient(req.headers['user-agent']);
+    const sessionStart = Date.now();
+    sseTransports.set(sessionId, transport);
 
-    transport.onerror = (err) => logger.error({ err }, 'SSE transport error');
+    logger.info({
+      event: 'sse.session_start',
+      sessionId,
+      client,
+      userAgent: req.headers['user-agent'],
+      ip: req.ip ?? req.headers['x-forwarded-for'],
+    }, `SSE session started: ${sessionId} (${client})`);
+
+    transport.onerror = (err) => logger.error({ event: 'sse.transport_error', sessionId, err }, 'SSE transport error');
     res.on('close', () => {
-      sseTransports.delete(transport.sessionId);
+      const sessionDurationMs = Date.now() - sessionStart;
+      sseTransports.delete(sessionId);
       void transport.close();
+      logger.info({
+        event: 'sse.session_end',
+        sessionId,
+        client,
+        sessionDurationMs,
+      }, `SSE session ended: ${sessionId} (${sessionDurationMs}ms)`);
     });
 
     server.connect(transport).catch((err: unknown) => {
-      logger.error({ err }, 'SSE server.connect error');
+      logger.error({ event: 'sse.connect_error', sessionId, err }, 'SSE server.connect error');
     });
   });
 
@@ -181,17 +199,23 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
       return;
     }
 
+    const proxyStart = Date.now();
+    const shortUrl = parsed.hostname + parsed.pathname;
+
     fetch(url, {
       headers: { 'User-Agent': 'HiMamiMCP/1.0' },
     })
       .then(async (upstream) => {
+        const durationMs = Date.now() - proxyStart;
         if (!upstream.ok) {
+          logger.warn({ event: 'img_proxy.upstream_error', url: shortUrl, status: upstream.status, durationMs }, `Image proxy upstream ${upstream.status}`);
           res.status(upstream.status).json({ error: 'Upstream error' });
           return;
         }
         const contentType = upstream.headers.get('content-type') ?? 'image/jpeg';
         // Only proxy image content types
         if (!contentType.startsWith('image/')) {
+          logger.warn({ event: 'img_proxy.not_image', url: shortUrl, contentType, durationMs }, 'Image proxy: not an image');
           res.status(403).json({ error: 'Not an image' });
           return;
         }
@@ -199,9 +223,11 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
         res.setHeader('Cache-Control', 'public, max-age=86400');
         const buffer = Buffer.from(await upstream.arrayBuffer());
         res.send(buffer);
+        logger.debug({ event: 'img_proxy.success', url: shortUrl, contentType, size: buffer.length, durationMs }, `Image proxy ${buffer.length}b ${durationMs}ms`);
       })
       .catch((err: unknown) => {
-        logger.error({ err, url }, 'Image proxy error');
+        const durationMs = Date.now() - proxyStart;
+        logger.error({ event: 'img_proxy.exception', url: shortUrl, durationMs, err }, `Image proxy error ${durationMs}ms`);
         res.status(502).json({ error: 'Proxy error' });
       });
   });

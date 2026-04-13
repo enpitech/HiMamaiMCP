@@ -173,7 +173,9 @@ export class HiMamiApiClient {
 
   private async get<T>(path: string): Promise<T> {
     const url = `${this.baseUrl}${path}`;
-    logger.debug({ url }, 'HiMami API request');
+    const startTime = Date.now();
+
+    logger.info({ event: 'api.request', path }, `-> API GET ${path}`);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -188,15 +190,16 @@ export class HiMamiApiClient {
         signal: controller.signal,
       });
 
-      // HiMami API sometimes returns valid data with non-200 status codes (e.g. 404)
-      // Try to parse JSON first, only error if the body contains an error structure
       const text = await response.text();
+      const durationMs = Date.now() - startTime;
+      const responseSize = text.length;
+
       let data: unknown;
       try {
         data = JSON.parse(text);
       } catch {
         if (!response.ok) {
-          logger.warn({ url, status: response.status }, 'HiMami API error (non-JSON)');
+          logger.warn({ event: 'api.error', path, status: response.status, durationMs, responseSize }, `<- API ${response.status} (non-JSON) ${durationMs}ms`);
           throw new HiMamiApiError(`HTTP ${response.status}`, response.status);
         }
         throw new HiMamiApiError('Invalid JSON response', 500);
@@ -206,21 +209,23 @@ export class HiMamiApiClient {
       const maybeError = data as Record<string, unknown>;
       if (!response.ok && maybeError.code && maybeError.message && Object.keys(maybeError).length <= 3) {
         const apiErr = maybeError as unknown as ApiError;
-        logger.warn({ url, status: response.status, error: apiErr }, 'HiMami API error');
+        logger.warn({ event: 'api.error', path, status: response.status, durationMs, responseSize, apiErrorCode: apiErr.code }, `<- API ${response.status} ${apiErr.code ?? ''} ${durationMs}ms`);
         throw new HiMamiApiError(apiErr.message, response.status, apiErr.code);
       }
 
-      logger.debug({ url, status: response.status }, 'HiMami API success');
+      logger.info({ event: 'api.success', path, status: response.status, durationMs, responseSize }, `<- API ${response.status} ${durationMs}ms [${responseSize}b]`);
       return data as T;
     } catch (err) {
       if (err instanceof HiMamiApiError) throw err;
 
+      const durationMs = Date.now() - startTime;
+
       if (err instanceof DOMException && err.name === 'AbortError') {
-        logger.error({ url }, 'HiMami API request timed out');
+        logger.error({ event: 'api.timeout', path, durationMs }, `<- API timeout after ${durationMs}ms`);
         throw new HiMamiApiError('Request timed out', 408);
       }
 
-      logger.error({ url, err }, 'HiMami API request failed');
+      logger.error({ event: 'api.exception', path, durationMs, error: err instanceof Error ? err.message : String(err) }, `<- API exception ${durationMs}ms`);
       throw new HiMamiApiError(
         err instanceof Error ? err.message : 'Unknown error',
         500,

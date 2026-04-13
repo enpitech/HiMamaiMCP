@@ -1,5 +1,5 @@
 import type { CategoryPage, CollectionItem, CampaignDetails, ProductDetails, BrandMetadata } from '../types/index.js';
-import { wrapInHtmlDoc, hiMamiUrl } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, escapeHtml, icon } from './theme.js';
 
 export const categoryCSS = `
   .category-card {
@@ -31,8 +31,8 @@ export const categoryCSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
     flex-shrink: 0;
+    color: var(--color-primary);
   }
   .category-title {
     font-size: 1.15rem;
@@ -98,6 +98,7 @@ export const categoryCSS = `
     font-size: 0.85rem;
     color: var(--color-primary);
     font-weight: 600;
+    cursor: pointer;
   }
   .category-item-link {
     flex-shrink: 0;
@@ -143,17 +144,17 @@ function renderCollectionItem(item: CollectionItem): string {
   }
 
   const imgHtml = imgUrl
-    ? `<img class="category-item-img" src="${imgUrl}" alt="${title}">`
+    ? `<img class="category-item-img" src="${imgUrl}" alt="${escapeHtml(title)}">`
     : '';
 
   const linkHtml = entityUrl
-    ? `<a class="entity-link category-item-link" href="${entityUrl}" target="_blank" rel="noopener">לפרטים</a>`
+    ? `<a class="entity-link category-item-link" href="${entityUrl}" target="_blank" rel="noopener" aria-label="${escapeHtml(title)} - לפרטים">לפרטים</a>`
     : '';
 
   return `<div class="category-item">
     ${imgHtml}
     <div class="category-item-info">
-      <div class="category-item-title">${title}</div>
+      <div class="category-item-title">${escapeHtml(title)}</div>
       ${meta ? `<div class="category-item-meta">${meta}</div>` : ''}
     </div>
     ${linkHtml}
@@ -164,11 +165,11 @@ export function renderCategoryPageBody(page: CategoryPage): string {
   const cat = page.categoryMetadata;
 
   const thumbHtml = cat.thumbnail?.url
-    ? `<img class="category-thumb" src="${cat.thumbnail.url}" alt="${cat.title.text}">`
-    : `<div class="category-thumb-placeholder">📂</div>`;
+    ? `<img class="category-thumb" src="${cat.thumbnail.url}" alt="${escapeHtml(cat.title.text)}">`
+    : `<div class="category-thumb-placeholder">${icon('folder', 24)}</div>`;
 
   const pathHtml = cat.ancestorSlugs.length > 0
-    ? `<div class="category-path">${cat.ancestorSlugs.join(' / ')} / ${cat.slug}</div>`
+    ? `<div class="category-path">${cat.ancestorSlugs.map((s) => escapeHtml(s)).join(' / ')} / ${escapeHtml(cat.slug)}</div>`
     : '';
 
   let sectionsHtml = '';
@@ -182,7 +183,7 @@ export function renderCategoryPageBody(page: CategoryPage): string {
 
     if (visibleItems.length === 0) continue;
 
-    const icon = section.type === 'BRANDS' ? '🏷️' : section.type === 'CAMPAIGNS' ? '🎯' : '📦';
+    const sectionIcon = section.type === 'BRANDS' ? icon('tag') : section.type === 'CAMPAIGNS' ? icon('target') : icon('package');
     const itemsHtml = visibleItems.map(renderCollectionItem).join('');
 
     const seeAllHtml = items.length > maxItems
@@ -190,7 +191,7 @@ export function renderCategoryPageBody(page: CategoryPage): string {
         : '';
 
     sectionsHtml += `<div class="category-section">
-      <div class="category-section-title">${icon} ${sectionTitle}</div>
+      <div class="category-section-title">${sectionIcon} ${escapeHtml(sectionTitle)}</div>
       ${itemsHtml}
       ${seeAllHtml}
     </div>`;
@@ -200,7 +201,7 @@ export function renderCategoryPageBody(page: CategoryPage): string {
     <div class="category-header">
       ${thumbHtml}
       <div>
-        <div class="category-title">${cat.title.text}</div>
+        <div class="category-title">${escapeHtml(cat.title.text)}</div>
         ${pathHtml}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import type { BrandPage, CollectionItem, CampaignDetails, ProductDetails } from '../types/index.js';
-import { wrapInHtmlDoc, hiMamiUrl, formatDate } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, formatDate, escapeHtml, icon } from './theme.js';
 
 export const brandCSS = `
   .brand-card {
@@ -56,6 +56,7 @@ export const brandCSS = `
     color: var(--color-muted);
     margin-bottom: 16px;
     line-height: 1.5;
+    max-width: 60ch;
   }
   .brand-name a {
     color: inherit;
@@ -151,15 +152,15 @@ export function renderBrandPageBody(page: BrandPage): string {
   const brandUrl = hiMamiUrl('brand', b.slug);
 
   const heroHtml = b.mainMedia?.url
-    ? `<img class="brand-hero-img" src="${b.mainMedia.url}" alt="${b.title.text}">`
+    ? `<img class="brand-hero-img" src="${b.mainMedia.url}" alt="${escapeHtml(b.title.text)}">`
     : '';
 
   const logoHtml = b.logo?.url
-    ? `<div class="brand-logo-overlay"><img src="${b.logo.url}" alt="${b.title.text}"></div>`
+    ? `<div class="brand-logo-overlay"><img src="${b.logo.url}" alt="${escapeHtml(b.title.text)}"></div>`
     : '';
 
   const desc = b.displayStrings.find((d) => d.type === 'DESCRIPTION' || d.type === 'SUBTITLE');
-  const descHtml = desc ? `<div class="brand-description">${desc.value.text}</div>` : '';
+  const descHtml = desc ? `<div class="brand-description">${escapeHtml(desc.value.text)}</div>` : '';
 
   // Extract deals from page sections
   const deals = extractDeals(page.pageSections as unknown as { items: Array<{ items: { items: CollectionItem[] } }> });
@@ -178,10 +179,10 @@ export function renderBrandPageBody(page: BrandPage): string {
       if (deal.type === 'campaign') {
         const c = deal.data as CampaignDetails;
         if (c.discountPercentage) meta.push(`${c.discountPercentage}% הנחה`);
-        if (c.campaignTypeLabel === 'GIFT') meta.push('🎁 מתנה');
+        if (c.campaignTypeLabel === 'GIFT') meta.push(`${icon('gift')} מתנה`);
         if (c.tierType === 'MAMI_PLUS') meta.push('מאמי+');
-        if (c.expirationTag === 'ENDS_TODAY') meta.push('⏰ מסתיים היום');
-        else if (c.expirationTag === 'ENDS_TOMORROW') meta.push('⏰ מסתיים מחר');
+        if (c.expirationTag === 'ENDS_TODAY') meta.push(`${icon('clock')} מסתיים היום`);
+        else if (c.expirationTag === 'ENDS_TOMORROW') meta.push(`${icon('clock')} מסתיים מחר`);
         else if (c.expirationDate) meta.push(`עד ${formatDate(c.expirationDate)}`);
       } else {
         const p = deal.data as ProductDetails;
@@ -191,16 +192,16 @@ export function renderBrandPageBody(page: BrandPage): string {
       }
 
       const imgHtml = imgUrl
-        ? `<img class="brand-deal-img" src="${imgUrl}" alt="${title}">`
+        ? `<img class="brand-deal-img" src="${imgUrl}" alt="${escapeHtml(title)}">`
         : `<div class="brand-deal-img-placeholder"></div>`;
 
       return `<div class="brand-deal-item">
         ${imgHtml}
         <div class="brand-deal-info">
-          <div class="brand-deal-title">${title}</div>
+          <div class="brand-deal-title">${escapeHtml(title)}</div>
           ${meta.length > 0 ? `<div class="brand-deal-meta">${meta.map((m) => `<span>${m}</span>`).join('')}</div>` : ''}
         </div>
-        <a class="entity-link brand-deal-link" href="${dealUrl}" target="_blank" rel="noopener">לפרטים</a>
+        <a class="entity-link brand-deal-link" href="${dealUrl}" target="_blank" rel="noopener" aria-label="${escapeHtml(title)} - לפרטים">לפרטים</a>
       </div>`;
     }).join('');
 
@@ -218,7 +219,7 @@ export function renderBrandPageBody(page: BrandPage): string {
       ${logoHtml}
     </div>
     <div class="brand-body">
-      <div class="brand-name"><a class="heading-link" href="${brandUrl}" target="_blank" rel="noopener">${b.title.text}</a></div>
+      <div class="brand-name"><a class="heading-link" href="${brandUrl}" target="_blank" rel="noopener">${escapeHtml(b.title.text)}</a></div>
       ${descHtml}
       ${dealsHtml}
     </div>

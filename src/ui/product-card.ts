@@ -1,5 +1,5 @@
 import type { ProductPage } from '../types/index.js';
-import { wrapInHtmlDoc, hiMamiUrl, formatDate } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, formatDate, escapeHtml, icon } from './theme.js';
 import { getTierBadge, renderConversionAction } from './campaign-card.js';
 
 export const productCSS = `
@@ -66,6 +66,7 @@ export const productCSS = `
     color: var(--color-muted);
     margin-bottom: 12px;
     line-height: 1.5;
+    max-width: 60ch;
   }
   .product-meta {
     display: flex;
@@ -113,7 +114,7 @@ export function renderProductDetailBody(page: ProductPage): string {
     const overlayHtml = p.expirationTag !== 'ENDED'
       ? `<span class="validity-overlay">בתוקף עד ${formatDate(p.expirationDate)}</span>`
       : '';
-    heroHtml = `<div class="product-hero-wrap"><img class="product-hero" src="${p.mainMedia.url}" alt="${p.title.text}">${overlayHtml}</div>`;
+    heroHtml = `<div class="product-hero-wrap"><img class="product-hero" src="${p.mainMedia.url}" alt="${escapeHtml(p.title.text)}">${overlayHtml}</div>`;
   }
 
   // Price section
@@ -133,27 +134,27 @@ export function renderProductDetailBody(page: ProductPage): string {
   const badges = [
     p.price?.discountPercent ? `<span class="badge badge-discount">${p.price.discountPercent}% הנחה</span>` : '',
     getTierBadge(p.tierType),
-    p.expirationTag === 'ENDS_TODAY' ? `<span class="badge badge-ends-today">⏰ מסתיים היום!</span>` : '',
-    p.expirationTag === 'ENDS_TOMORROW' ? `<span class="badge badge-ends-tomorrow">⏰ מסתיים מחר</span>` : '',
+    p.expirationTag === 'ENDS_TODAY' ? `<span class="badge badge-ends-today">${icon('clock')} מסתיים היום!</span>` : '',
+    p.expirationTag === 'ENDS_TOMORROW' ? `<span class="badge badge-ends-tomorrow">${icon('clock')} מסתיים מחר</span>` : '',
   ].filter(Boolean);
 
   // Description
   const desc = p.displayStrings.find((d) => d.type === 'DESCRIPTION' || d.type === 'SUBTITLE');
-  const descHtml = desc ? `<div class="product-description">${desc.value.text}</div>` : '';
+  const descHtml = desc ? `<div class="product-description">${escapeHtml(desc.value.text)}</div>` : '';
 
   // CTA — reuse shared renderer
   const ctaHtml = p.conversionAction ? renderConversionAction(p.conversionAction) : '';
 
   // Tags
   const tagsHtml = p.tagKeys.length > 0
-    ? `<div class="product-tags">${p.tagKeys.map((t) => `<span class="product-tag">${t}</span>`).join('')}</div>`
+    ? `<div class="product-tags">${p.tagKeys.map((t) => `<span class="product-tag">${escapeHtml(t)}</span>`).join('')}</div>`
     : '';
 
   const body = `<div class="product-card">
     ${heroHtml}
     <div class="product-body">
-      <div class="product-brand"><a class="heading-link" href="${brandUrl}" target="_blank" rel="noopener">${brand.title.text}</a></div>
-      <div class="product-title">${p.title.text}</div>
+      <div class="product-brand"><a class="heading-link" href="${brandUrl}" target="_blank" rel="noopener">${escapeHtml(brand.title.text)}</a></div>
+      <div class="product-title">${escapeHtml(p.title.text)}</div>
       <div class="product-badges">${badges.join('')}</div>
       ${priceHtml}
       ${descHtml}
@@ -162,7 +163,7 @@ export function renderProductDetailBody(page: ProductPage): string {
       <div class="product-meta">
         <span>בתוקף עד ${formatDate(p.expirationDate)}</span>
       </div>
-      <div class="product-footer-link"><a class="entity-link" href="${productUrl}" target="_blank" rel="noopener">צפייה באתר ←</a></div>
+      <div class="product-footer-link"><a class="entity-link" href="${productUrl}" target="_blank" rel="noopener" aria-label="${escapeHtml(p.title.text)} - צפייה באתר">צפייה באתר ←</a></div>
     </div>
   </div>`;
 

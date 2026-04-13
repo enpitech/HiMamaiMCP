@@ -1,10 +1,10 @@
 import type { HomePage, CollectionItem, CampaignDetails, ProductDetails, BrandMetadata } from '../types/index.js';
-import { wrapInHtmlDoc, hiMamiUrl, HIMAMI_BASE_URL } from './theme.js';
+import { wrapInHtmlDoc, hiMamiUrl, HIMAMI_BASE_URL, escapeHtml, icon } from './theme.js';
 
 export const homeCSS = `
   .home-card {
     width: 100%;
-    background: var(--color-bg);
+    background: var(--color-card-bg);
     border-radius: var(--border-radius);
     overflow: hidden;
     box-shadow: var(--shadow-md);
@@ -68,8 +68,8 @@ export const homeCSS = `
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.3rem;
     margin: 0 auto 4px;
+    color: var(--color-primary);
   }
   .home-highlight-label {
     font-size: 0.7rem;
@@ -136,7 +136,7 @@ export const homeCSS = `
     overflow: hidden;
   }
   .home-grid-item-meta {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     color: var(--color-muted);
     margin-top: 2px;
   }
@@ -163,7 +163,7 @@ export function renderHomePageBody(page: HomePage): string {
   if (heroes.length > 0) {
     const hero = heroes[0];
     const imgHtml = hero.media?.url
-      ? `<img src="${hero.media.url}" alt="">`
+      ? `<img src="${hero.media.url}" alt="Hi Mami">`
       : '';
     const heroLink = hero.targetUrl;
     const heroContent = `${imgHtml}
@@ -186,12 +186,13 @@ export function renderHomePageBody(page: HomePage): string {
   const highlights = page.hero?.highlights ?? [];
   if (highlights.length > 0) {
     const items = highlights.slice(0, 8).map((h: { media?: { url?: string }; title?: string }) => {
+      const hTitle = h.title ?? '';
       const imgEl = h.media?.url
-        ? `<img class="home-highlight-img" src="${h.media.url}" alt="${h.title ?? ''}">`
-        : `<div class="home-highlight-placeholder">⭐</div>`;
+        ? `<img class="home-highlight-img" src="${h.media.url}" alt="${escapeHtml(hTitle)}">`
+        : `<div class="home-highlight-placeholder">${icon('star', 20)}</div>`;
       return `<div class="home-highlight">
         ${imgEl}
-        <div class="home-highlight-label">${h.title ?? ''}</div>
+        <div class="home-highlight-label">${escapeHtml(hTitle)}</div>
       </div>`;
     }).join('');
     highlightsHtml = `<div class="home-highlights">${items}</div>`;
@@ -242,9 +243,9 @@ export function renderHomePageBody(page: HomePage): string {
         }
       }
 
-      const cardContent = `${imgUrl ? `<img src="${imgUrl}" alt="${title}">` : ''}
+      const cardContent = `${imgUrl ? `<img src="${imgUrl}" alt="${escapeHtml(title)}">` : ''}
         <div class="home-grid-item-body">
-          <div class="home-grid-item-title">${title}</div>
+          <div class="home-grid-item-title">${escapeHtml(title)}</div>
           ${discount ? `<div class="home-grid-item-meta">${discount}% הנחה</div>` : ''}
         </div>`;
 
@@ -254,12 +255,12 @@ export function renderHomePageBody(page: HomePage): string {
     }).join('');
 
     const seeAllHtml = section.seeAll
-      ? `<a class="home-section-see-all" href="${HIMAMI_BASE_URL}${section.seeAll.path}" target="_blank" rel="noopener">${section.seeAll.text} ←</a>`
+      ? `<a class="home-section-see-all" href="${HIMAMI_BASE_URL}${section.seeAll.path}" target="_blank" rel="noopener">${escapeHtml(section.seeAll.text)} ←</a>`
       : '';
 
     sectionsHtml += `<div class="home-section">
       <div class="home-section-header">
-        <div class="home-section-title">${sectionTitle}</div>
+        <div class="home-section-title">${escapeHtml(sectionTitle)}</div>
         ${seeAllHtml}
       </div>
       <div class="home-items-grid">${itemsHtml}</div>
