@@ -29,7 +29,7 @@ import type {
   ProductPage,
   CategoryPage,
 } from '../types/index.js';
-import { createMcpAppShell } from '../ui/theme.js';
+import { createMcpAppShell, HIMAMI_BASE_URL } from '../ui/theme.js';
 import config from '../utils/config.js';
 import logger from '../utils/logger.js';
 
@@ -510,7 +510,9 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         'Browse deal categories on Hi Mami. ' +
         'Pass an empty path to see all top-level categories, ' +
         'or a nested path to drill down (e.g. "fashion", "fashion/women/shoes"). ' +
-        'Returns the category metadata and deals in that category.',
+        'Returns the category metadata and deals in that category. ' +
+        'IMPORTANT: Always include the deal URLs from the text result as clickable links ' +
+        'in your response so users can visit the deals on hi-mami.com.',
       annotations: TOOL_ANNOTATIONS,
       _meta: { ui: { resourceUri: 'ui://himami/category' } },
       inputSchema: {
@@ -553,19 +555,19 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
             id: (b as { slug?: string }).slug ?? (b as { id?: string }).id,
             title: ((b as { title?: { text?: string } }).title)?.text ?? String(b),
             type: 'BRAND',
-            url: `https://hi-mami.com/brands/${(b as { slug?: string }).slug ?? ''}`,
+            url: `${HIMAMI_BASE_URL}/brands/${(b as { slug?: string }).slug ?? ''}`,
           })),
           ...(results.campaigns.items as Array<Record<string, unknown>>).map((c) => ({
             id: (c as { id?: string }).id,
             title: ((c as { title?: { text?: string } }).title)?.text ?? String(c),
             type: 'CAMPAIGN',
-            url: `https://hi-mami.com/campaigns/${(c as { id?: string }).id ?? ''}`,
+            url: `${HIMAMI_BASE_URL}/brands/${(c as { brandSlug?: string }).brandSlug ?? ''}/?benefitid=${(c as { id?: string }).id ?? ''}`,
           })),
           ...(results.products.items as Array<Record<string, unknown>>).map((p) => ({
             id: (p as { id?: string }).id,
             title: ((p as { title?: { text?: string } }).title)?.text ?? String(p),
             type: 'PRODUCT',
-            url: `https://hi-mami.com/products/${(p as { id?: string }).id ?? ''}`,
+            url: `${HIMAMI_BASE_URL}/brands/${(p as { brandSlug?: string }).brandSlug ?? ''}/?benefitid=${(p as { id?: string }).id ?? ''}`,
           })),
         ];
         return {
@@ -605,7 +607,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
             text = [
               `Brand: ${brand.brandMetadata.title.text}`,
               desc ? `Description: ${desc}` : null,
-              `URL: https://hi-mami.com/brands/${brand.brandMetadata.slug}`,
+              `URL: ${HIMAMI_BASE_URL}/brands/${brand.brandMetadata.slug}`,
             ].filter(Boolean).join('\n');
             break;
           }
@@ -618,7 +620,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
               c.discountPercentage ? `Discount: ${c.discountPercentage}%` : null,
               `Expires: ${c.expirationDate}`,
               `Tier: ${c.tierType}`,
-              `URL: https://hi-mami.com/brands/${c.brandSlug}`,
+              `URL: ${HIMAMI_BASE_URL}/brands/${c.brandSlug}`,
             ].filter(Boolean).join('\n');
             break;
           }
@@ -631,7 +633,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
               p.price ? `Price: ${p.price.discountedPrice} ${p.price.currency} (was ${p.price.originPrice})` : null,
               p.price ? `Discount: ${p.price.discountPercent}%` : null,
               `Expires: ${p.expirationDate}`,
-              `URL: https://hi-mami.com/brands/${p.brandSlug}`,
+              `URL: ${HIMAMI_BASE_URL}/brands/${p.brandSlug}`,
             ].filter(Boolean).join('\n');
             break;
           }
