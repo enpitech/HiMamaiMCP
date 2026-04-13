@@ -63,9 +63,9 @@ export function generateBaseCSS(): string {
       --color-success: #16A34A;
       --color-warning: #D97706;
       --color-danger: #DC2626;
-      --color-muted: #6B7280;
-      --color-text: #1F2937;
-      --color-text-light: #4B5563;
+      --color-muted: #4B5563;
+      --color-text: #111827;
+      --color-text-light: #374151;
       --color-bg: transparent;
       --color-bg-alt: #F3F4F6;
       --color-border: #D1D5DB;
@@ -159,17 +159,17 @@ export function generateBaseCSS(): string {
     }
 
     a {
-      color: var(--color-primary);
-      text-decoration: none;
-    }
-
-    h1 a, h2 a, h3 a,
-    .heading-link {
       color: inherit;
       text-decoration: none;
+      pointer-events: none;
+      cursor: default;
     }
-    .heading-link:hover {
-      color: var(--color-primary);
+
+    /* Hide navigation-only links — sandbox blocks them anyway */
+    .entity-link, .deal-footer-link, .campaign-footer-link,
+    .product-footer-link, .brand-deals-see-all, .home-section-see-all,
+    .category-see-all, .category-item-link, .brand-deal-link {
+      display: none;
     }
 
     .badge {
@@ -437,11 +437,22 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-
 <div id="app" style="display:flex;justify-content:center;align-items:center;min-height:60px;color:var(--color-muted);font-size:0.9rem;">\u05d8\u05d5\u05e2\u05df...</div>
 <script>
 (function(){
-  // Immediate theme detection — runs before PostMessage handshake
-  // so the first paint matches the host context
-  if(window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches){
-    document.documentElement.setAttribute("data-theme","dark");
+  // Immediate theme detection — multiple strategies since Claude Desktop's
+  // iframe may not propagate prefers-color-scheme correctly.
+  function detectDark(){
+    // Strategy 1: CSS media query
+    if(window.matchMedia&&window.matchMedia("(prefers-color-scheme:dark)").matches) return true;
+    // Strategy 2: check iframe background color (host may set it)
+    try{
+      var bg=window.getComputedStyle(document.documentElement).backgroundColor;
+      if(bg&&bg!=="rgba(0, 0, 0, 0)"&&bg!=="transparent"){
+        var m=bg.match(/\\d+/g);
+        if(m&&m.length>=3){var lum=(parseInt(m[0])*299+parseInt(m[1])*587+parseInt(m[2])*114)/1000;if(lum<128)return true;}
+      }
+    }catch(e){}
+    return false;
   }
+  if(detectDark()){document.documentElement.setAttribute("data-theme","dark");}
 
   var PROXY_BASE="${proxyBaseUrl}/img?url=";
   var nextId=1,pending={},app=document.getElementById("app");
