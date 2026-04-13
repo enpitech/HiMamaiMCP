@@ -237,13 +237,21 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://hi-mami
 
   function proxyImages(){
     var imgs=app.querySelectorAll("img[src]");
+    var count=imgs.length,loaded=0,failed=0;
     for(var i=0;i<imgs.length;i++){
       var src=imgs[i].getAttribute("src");
       if(src&&(src.indexOf("http://")===0||src.indexOf("https://")===0)&&src.indexOf(PROXY_BASE)===-1){
         imgs[i].setAttribute("src",PROXY_BASE+encodeURIComponent(src));
       }
-      imgs[i].onerror=function(){this.style.display="none";};
+      imgs[i].onload=function(){loaded++;updateDebug(count,loaded,failed);};
+      imgs[i].onerror=function(){failed++;this.style.opacity="0.3";this.style.minHeight="20px";this.style.background="rgba(255,0,0,0.1)";updateDebug(count,loaded,failed);};
     }
+    updateDebug(count,loaded,failed);
+  }
+  function updateDebug(total,ok,fail){
+    var el=document.getElementById("_dbg");
+    if(!el){el=document.createElement("div");el.id="_dbg";el.style.cssText="position:fixed;bottom:0;left:0;right:0;padding:2px 6px;font-size:10px;background:rgba(0,0,0,0.7);color:#aaa;z-index:9999;text-align:left;direction:ltr;";app.parentNode.appendChild(el);}
+    el.textContent="imgs: "+total+" | loaded: "+ok+" | failed: "+fail;
   }
 
   window.addEventListener("message",function(e){

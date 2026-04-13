@@ -34,6 +34,23 @@ import config from '../utils/config.js';
 import logger from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
+// Helper: rewrite image URLs through our proxy server-side
+// ---------------------------------------------------------------------------
+
+function proxyImageUrls(html: string, proxyBase: string): string {
+  return html.replace(
+    /(<img\s[^>]*\bsrc=")([^"]+)(")/gi,
+    (_match, pre: string, url: string, post: string) => {
+      // Only proxy absolute http(s) URLs that aren't already proxied
+      if ((url.startsWith('http://') || url.startsWith('https://')) && !url.includes('/img?url=')) {
+        return `${pre}${proxyBase}/img?url=${encodeURIComponent(url)}${post}`;
+      }
+      return _match;
+    },
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Tool registration
 // ---------------------------------------------------------------------------
 
@@ -136,7 +153,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatSearchResults(results) }],
-          _meta: { cardHtml: renderSearchResultsBody(results) },
+          _meta: { cardHtml: proxyImageUrls(renderSearchResultsBody(results), proxyBase) },
         };
       } catch (err) {
         return handleToolError(err, 'search for deals');
@@ -213,7 +230,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatBrandPage(brandPage) }],
-          _meta: { cardHtml: renderBrandPageBody(brandPage) },
+          _meta: { cardHtml: proxyImageUrls(renderBrandPageBody(brandPage), proxyBase) },
         };
       } catch (err) {
         return handleToolError(err, `get brand "${brand_slug}"`);
@@ -248,7 +265,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCampaignDetail(campaignPage) }],
-          _meta: { cardHtml: renderCampaignDetailBody(campaignPage) },
+          _meta: { cardHtml: proxyImageUrls(renderCampaignDetailBody(campaignPage), proxyBase) },
         };
       } catch (err) {
         return handleToolError(err, `get campaign "${campaign_id}"`);
@@ -283,7 +300,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatProductDetail(productPage) }],
-          _meta: { cardHtml: renderProductDetailBody(productPage) },
+          _meta: { cardHtml: proxyImageUrls(renderProductDetailBody(productPage), proxyBase) },
         };
       } catch (err) {
         return handleToolError(err, `get product "${product_id}"`);
@@ -317,7 +334,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCategoryPage(categoryPage) }],
-          _meta: { cardHtml: renderCategoryPageBody(categoryPage) },
+          _meta: { cardHtml: proxyImageUrls(renderCategoryPageBody(categoryPage), proxyBase) },
         };
       } catch (err) {
         return handleToolError(err, `browse categories "${category_path}"`);
