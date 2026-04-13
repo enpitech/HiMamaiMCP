@@ -76,7 +76,7 @@ Add to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "himami": {
-      "url": "https://your-deployment.vercel.app/mcp"
+      "url": "https://himami-mcp-production.up.railway.app/mcp"
     }
   }
 }
@@ -90,7 +90,7 @@ Add to `.cursor/mcp.json` or equivalent:
 {
   "mcpServers": {
     "himami": {
-      "url": "https://your-deployment.vercel.app/mcp",
+      "url": "https://himami-mcp-production.up.railway.app/mcp",
       "transport": "streamable-http"
     }
   }

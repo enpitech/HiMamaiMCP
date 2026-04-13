@@ -425,7 +425,7 @@ export function wrapInHtmlDoc(body: string, extraCSS = ''): string {
  * image URL rewriting through our proxy, and
  * a tool-result listener that injects pre-rendered card HTML.
  */
-export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://hi-mami-mcp.vercel.app'): string {
+export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-mcp-production.up.railway.app'): string {
   return `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
