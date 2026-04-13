@@ -34,10 +34,7 @@ import config from '../utils/config.js';
 import logger from '../utils/logger.js';
 
 // ---------------------------------------------------------------------------
-// Card HTML post-processing for MCP iframe sandbox:
-// 1. Strip links (sandbox blocks navigation)
-// 2. Strip images (sandbox blocks external loading, base64 is unreliable)
-// 3. Inject self-contained CSS (bypasses cached app shell styles)
+// Card HTML post-processing for MCP iframe sandbox
 // ---------------------------------------------------------------------------
 
 /** Remove all <a> tags, keeping inner content. */
@@ -45,80 +42,143 @@ function stripLinks(html: string): string {
   return html.replace(/<a\b[^>]*>/gi, '').replace(/<\/a>/gi, '');
 }
 
-/** Remove all <img> tags and their wrapper divs (hero-wrap, etc.). */
-function stripImages(html: string): string {
-  return html
-    .replace(/<div class="(deal-hero-wrap|campaign-hero-wrap|product-hero-wrap|brand-hero|home-hero)"[^>]*>[\s\S]*?<\/div>/gi, '')
-    .replace(/<img\b[^>]*\/?>/gi, '');
+/** Inline images as base64, remove any that fail to load. */
+async function inlineImages(html: string, api: HiMamiApiClient): Promise<string> {
+  const imgRegex = /(<img\s[^>]*\bsrc=")([^"]+)(")/gi;
+  const matches: Array<{ url: string }> = [];
+
+  let m: RegExpExecArray | null;
+  while ((m = imgRegex.exec(html)) !== null) {
+    const url = m[2];
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      matches.push({ url });
+    }
+  }
+
+  if (matches.length === 0) return html;
+
+  const results = await Promise.all(
+    matches.slice(0, 10).map(async ({ url }) => {
+      const img = await api.fetchImageAsBase64(url);
+      return { url, img };
+    }),
+  );
+
+  const urlMap = new Map<string, string>();
+  for (const { url, img } of results) {
+    if (img) {
+      urlMap.set(url, `data:${img.mimeType};base64,${img.data}`);
+    }
+  }
+
+  // Replace successful inlines, remove failed images entirely
+  return html.replace(
+    /<img\s[^>]*\bsrc="([^"]+)"[^>]*\/?>/gi,
+    (full, url: string) => {
+      const dataUri = urlMap.get(url);
+      if (dataUri) return full.replace(url, dataUri);
+      return ''; // Remove failed images
+    },
+  );
 }
 
-/** Inject inline CSS so the card looks correct regardless of cached app shell. */
-function addCardCSS(html: string): string {
-  const css = `<style>
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#111827;background:#fff;direction:rtl;text-align:right;font-size:15px;line-height:1.5;margin:0;padding:0}
+// Light + dark inline CSS — self-contained, bypasses cached app shell
+const CARD_CSS = `<style>
 *{box-sizing:border-box;margin:0;padding:0}
-.search-header{padding:14px 16px;border-bottom:1px solid #E5E7EB}
-.search-title{font-size:1rem;font-weight:700;color:#111827}
-.search-subtitle{font-size:0.8rem;color:#6B7280;margin-top:2px}
-.search-empty{text-align:center;padding:32px 16px;color:#6B7280}
-.deal-card{border-bottom:1px solid #E5E7EB;padding:12px 16px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;direction:rtl;text-align:right;font-size:15px;line-height:1.5;margin:0;padding:0;color:var(--t);background:var(--bg)}
+:root{--t:#111827;--t2:#4B5563;--mu:#6B7280;--bg:#fff;--bg2:#F3F4F6;--br:#D1D5DB;--br2:#E5E7EB;--pk:#E91E63;--gr:#16A34A;--rd:#DC2626;--am:#D97706;--bl:#2563EB;--mp:#B45309;--sh:0 4px 12px rgba(0,0,0,0.1)}
+[data-theme="dark"]{--t:#E5E7EB;--t2:#9CA3AF;--mu:#9CA3AF;--bg:#1F2937;--bg2:#374151;--br:#4B5563;--br2:#374151;--pk:#F472B6;--gr:#4ADE80;--rd:#F87171;--am:#FBBF24;--bl:#60A5FA;--mp:#FBBF24;--sh:0 4px 12px rgba(0,0,0,0.3)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--t:#E5E7EB;--t2:#9CA3AF;--mu:#9CA3AF;--bg:#1F2937;--bg2:#374151;--br:#4B5563;--br2:#374151;--pk:#F472B6;--gr:#4ADE80;--rd:#F87171;--am:#FBBF24;--bl:#60A5FA;--mp:#FBBF24;--sh:0 4px 12px rgba(0,0,0,0.3)}}
+img{max-width:100%;height:auto;display:block;border-radius:8px}
+.search-header{padding:14px 16px;border-bottom:1px solid var(--br2)}
+.search-title{font-size:1rem;font-weight:700;color:var(--t)}
+.search-subtitle{font-size:0.8rem;color:var(--mu);margin-top:2px}
+.search-empty{text-align:center;padding:32px 16px;color:var(--mu)}
+.deal-card{border-bottom:1px solid var(--br2);overflow:hidden}
 .deal-card:last-child{border-bottom:none}
-.deal-brand{font-size:0.75rem;color:#6B7280;margin-bottom:4px}
-.deal-title{font-size:1rem;font-weight:700;color:#111827;line-height:1.4;margin-bottom:4px}
-.deal-description{font-size:0.85rem;color:#4B5563;line-height:1.4;margin-bottom:8px}
+.deal-hero-wrap{position:relative;overflow:hidden}
+.deal-hero{width:100%;max-height:180px;object-fit:cover;display:block}
+.deal-body{padding:12px 16px}
+.deal-brand{font-size:0.75rem;color:var(--mu);margin-bottom:4px}
+.deal-title{font-size:1rem;font-weight:700;color:var(--t);line-height:1.4;margin-bottom:4px}
+.deal-description{font-size:0.85rem;color:var(--t2);line-height:1.4;margin-bottom:8px}
 .deal-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
-.deal-footer{display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:#6B7280;padding-top:6px;border-top:1px solid #E5E7EB}
-.brand-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #E5E7EB}
-.brand-row-name{font-weight:600;font-size:0.9rem;color:#111827}
-.brand-row-desc{font-size:0.8rem;color:#6B7280;margin-top:2px}
-.campaign-card,.product-card,.brand-card,.category-card,.home-card{background:#fff;border-radius:12px;border:1px solid #D1D5DB;overflow:hidden;max-width:480px;margin:0 auto}
-.campaign-brand-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#F3F4F6;border-bottom:1px solid #E5E7EB}
-.campaign-brand-name{font-weight:600;color:#111827}
+.deal-footer{display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:var(--mu);padding-top:6px;border-top:1px solid var(--br2)}
+.brand-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--br2)}
+.brand-row-logo{width:40px;height:40px;border-radius:8px;object-fit:contain;background:var(--bg2)}
+.brand-row-name{font-weight:600;font-size:0.9rem;color:var(--t)}
+.brand-row-desc{font-size:0.8rem;color:var(--mu);margin-top:2px}
+.campaign-card,.product-card,.brand-card,.category-card,.home-card{background:var(--bg);border-radius:12px;border:1px solid var(--br);overflow:hidden;max-width:480px;margin:0 auto;box-shadow:var(--sh)}
+.campaign-brand-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--br2)}
+.campaign-brand-logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:var(--bg2)}
+.campaign-brand-name{font-weight:600;color:var(--t)}
+.campaign-hero-wrap,.product-hero-wrap{position:relative;overflow:hidden}
+.campaign-hero{width:100%;max-height:240px;object-fit:cover}
+.product-hero{width:100%;max-height:280px;object-fit:cover;background:var(--bg2)}
 .campaign-body,.product-body,.brand-body{padding:16px}
-.campaign-title,.product-title{font-size:1.15rem;font-weight:700;color:#111827;margin-bottom:6px;line-height:1.4}
-.campaign-description,.product-description,.brand-description{font-size:0.9rem;color:#4B5563;margin-bottom:12px;line-height:1.5}
+.campaign-title,.product-title{font-size:1.15rem;font-weight:700;color:var(--t);margin-bottom:6px;line-height:1.4}
+.campaign-description,.product-description,.brand-description{font-size:0.9rem;color:var(--t2);margin-bottom:12px;line-height:1.5}
 .campaign-badges,.product-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-.campaign-meta,.product-meta{display:flex;gap:12px;font-size:0.8rem;color:#6B7280;margin-top:12px;padding-top:12px;border-top:1px solid #E5E7EB}
-.brand-name{font-size:1.25rem;font-weight:700;color:#111827;margin-bottom:6px}
-.brand-deals-header{font-size:0.95rem;font-weight:700;color:#111827;margin-bottom:10px;padding-top:12px;border-top:1px solid #E5E7EB}
-.brand-deal-item{display:flex;align-items:flex-start;gap:12px;padding:10px;border-radius:8px;margin-bottom:6px;border:1px solid #E5E7EB;background:#F9FAFB}
-.brand-deal-title{font-weight:600;font-size:0.85rem;color:#111827}
-.brand-deal-meta{font-size:0.75rem;color:#6B7280;margin-top:3px}
-.category-header{padding:16px;border-bottom:1px solid #E5E7EB;display:flex;align-items:center;gap:12px}
-.category-title{font-size:1.15rem;font-weight:700;color:#111827}
+.campaign-meta,.product-meta{display:flex;gap:12px;font-size:0.8rem;color:var(--mu);margin-top:12px;padding-top:12px;border-top:1px solid var(--br2)}
+.brand-hero{position:relative;width:100%;height:160px;overflow:hidden;background:var(--bg2)}
+.brand-hero-img{width:100%;height:100%;object-fit:cover}
+.brand-logo-overlay{position:absolute;bottom:-24px;right:16px;width:56px;height:56px;border-radius:12px;background:var(--bg2);padding:4px;display:flex;align-items:center;justify-content:center}
+.brand-logo-overlay img{width:100%;height:100%;object-fit:contain;border-radius:8px}
+.brand-name{font-size:1.25rem;font-weight:700;color:var(--t);margin-bottom:6px}
+.brand-deals-header{font-size:0.95rem;font-weight:700;color:var(--t);margin-bottom:10px;padding-top:12px;border-top:1px solid var(--br2)}
+.brand-deal-item{display:flex;align-items:flex-start;gap:12px;padding:10px;border-radius:8px;margin-bottom:6px;border:1px solid var(--br2);background:var(--bg2)}
+.brand-deal-img{width:80px;height:60px;border-radius:8px;object-fit:cover}
+.brand-deal-title{font-weight:600;font-size:0.85rem;color:var(--t)}
+.brand-deal-meta{font-size:0.75rem;color:var(--mu);margin-top:3px}
+.category-header{padding:16px;border-bottom:1px solid var(--br2);display:flex;align-items:center;gap:12px}
+.category-thumb{width:48px;height:48px;border-radius:10px;object-fit:cover}
+.category-thumb-placeholder{width:48px;height:48px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;color:var(--pk)}
+.category-title{font-size:1.15rem;font-weight:700;color:var(--t)}
 .category-sections{padding:8px 16px 16px}
-.category-section-title{font-size:0.95rem;font-weight:700;color:#E91E63;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.category-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #E5E7EB}
+.category-section-title{font-size:0.95rem;font-weight:700;color:var(--pk);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.category-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--br2)}
 .category-item:last-child{border-bottom:none}
-.category-item-title{font-weight:600;font-size:0.85rem;color:#111827}
-.category-item-meta{font-size:0.75rem;color:#6B7280}
+.category-item-img{width:40px;height:40px;border-radius:8px;object-fit:cover}
+.category-item-title{font-weight:600;font-size:0.85rem;color:var(--t)}
+.category-item-meta{font-size:0.75rem;color:var(--mu)}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;white-space:nowrap}
-.badge-discount{background:rgba(22,163,74,0.1);color:#16A34A}
-.badge-mami-plus{background:rgba(180,83,9,0.1);color:#B45309}
-.badge-exclusive{background:rgba(233,30,99,0.1);color:#E91E63}
-.badge-ends-today{background:rgba(220,38,38,0.1);color:#DC2626}
-.badge-ends-tomorrow{background:rgba(217,119,6,0.1);color:#D97706}
-.badge-ended{background:rgba(107,114,128,0.1);color:#6B7280}
-.badge-gift{background:rgba(37,99,235,0.1);color:#2563EB}
-.badge-offer{background:rgba(233,30,99,0.08);color:#E91E63}
-.cta-box{background:rgba(233,30,99,0.06);border:1px solid #E91E63;border-radius:8px;padding:12px 16px;margin-top:12px}
-.cta-code{font-family:'Courier New',monospace;font-size:1.1rem;font-weight:700;color:#E91E63;background:rgba(233,30,99,0.08);padding:6px 12px;border-radius:6px;display:inline-block;direction:ltr;letter-spacing:1px}
-.cta-label{font-size:0.8rem;color:#6B7280;margin-bottom:6px}
-.price-discounted{font-size:1.3rem;font-weight:700;color:#E91E63}
-.price-original{text-decoration:line-through;color:#9CA3AF;font-size:0.9rem}
-.product-savings{font-size:0.85rem;color:#16A34A;font-weight:600;margin-bottom:10px}
+.badge-discount{background:rgba(22,163,74,0.1);color:var(--gr)}
+.badge-mami-plus{background:rgba(180,83,9,0.1);color:var(--mp)}
+.badge-exclusive{background:rgba(233,30,99,0.1);color:var(--pk)}
+.badge-ends-today{background:rgba(220,38,38,0.1);color:var(--rd)}
+.badge-ends-tomorrow{background:rgba(217,119,6,0.1);color:var(--am)}
+.badge-ended{background:rgba(107,114,128,0.1);color:var(--mu)}
+.badge-gift{background:rgba(37,99,235,0.1);color:var(--bl)}
+.badge-offer{background:rgba(233,30,99,0.08);color:var(--pk)}
+.cta-box{background:rgba(233,30,99,0.06);border:1px solid var(--pk);border-radius:8px;padding:12px 16px;margin-top:12px}
+.cta-code{font-family:'Courier New',monospace;font-size:1.1rem;font-weight:700;color:var(--pk);background:rgba(233,30,99,0.08);padding:6px 12px;border-radius:6px;display:inline-block;direction:ltr;letter-spacing:1px}
+.cta-label{font-size:0.8rem;color:var(--mu);margin-bottom:6px}
+.price-discounted{font-size:1.3rem;font-weight:700;color:var(--pk)}
+.price-original{text-decoration:line-through;color:var(--mu);font-size:0.9rem}
+.product-savings{font-size:0.85rem;color:var(--gr);font-weight:600;margin-bottom:10px}
 .product-price-section{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
-.product-tag{background:#F3F4F6;color:#6B7280;padding:2px 8px;border-radius:12px;font-size:0.75rem}
+.product-tag{background:var(--bg2);color:var(--mu);padding:2px 8px;border-radius:12px;font-size:0.75rem}
 .product-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
-.validity-overlay{display:none}
+.validity-overlay{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:#fff;padding:3px 8px;border-radius:4px;font-size:0.7rem}
 .icon{display:inline-block;vertical-align:-0.15em}
+.home-grid-item{flex-shrink:0;width:150px;border-radius:10px;overflow:hidden;background:var(--bg);box-shadow:0 1px 3px rgba(0,0,0,0.1);border:1px solid var(--br2)}
+.home-grid-item img{width:100%;height:100px;object-fit:cover}
+.home-grid-item-body{padding:6px 8px}
+.home-grid-item-title{font-size:0.75rem;font-weight:600;line-height:1.3;color:var(--t)}
+.home-grid-item-meta{font-size:0.75rem;color:var(--mu);margin-top:2px}
+.home-highlights{padding:12px 16px;display:flex;gap:10px;overflow-x:auto;border-bottom:1px solid var(--br2)}
+.home-highlight-img{width:52px;height:52px;border-radius:50%;border:2px solid var(--pk);object-fit:cover}
+.home-sections{padding:12px 16px 16px}
+.home-section{margin-bottom:16px}
+.home-section-title{font-size:1rem;font-weight:700;color:var(--t)}
+.home-items-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
 </style>`;
-  return css + html;
-}
 
 /** Full post-processing pipeline for card HTML. */
-function prepareCardHtml(html: string): string {
-  return addCardCSS(stripImages(stripLinks(html)));
+async function prepareCardHtml(html: string, api: HiMamiApiClient): Promise<string> {
+  const stripped = stripLinks(html);
+  const withImages = await inlineImages(stripped, api);
+  return CARD_CSS + withImages;
 }
 
 // ---------------------------------------------------------------------------
@@ -282,7 +342,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatSearchResults(results) }],
-          _meta: { cardHtml: prepareCardHtml(renderSearchResultsBody(results)) },
+          _meta: { cardHtml: await prepareCardHtml(renderSearchResultsBody(results), api) },
         };
       } catch (err) {
         return handleToolError(err, 'search for deals');
@@ -359,7 +419,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatBrandPage(brandPage) }],
-          _meta: { cardHtml: prepareCardHtml(renderBrandPageBody(brandPage)) },
+          _meta: { cardHtml: await prepareCardHtml(renderBrandPageBody(brandPage), api) },
         };
       } catch (err) {
         return handleToolError(err, `get brand "${brand_slug}"`);
@@ -394,7 +454,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCampaignDetail(campaignPage) }],
-          _meta: { cardHtml: prepareCardHtml(renderCampaignDetailBody(campaignPage)) },
+          _meta: { cardHtml: await prepareCardHtml(renderCampaignDetailBody(campaignPage), api) },
         };
       } catch (err) {
         return handleToolError(err, `get campaign "${campaign_id}"`);
@@ -429,7 +489,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatProductDetail(productPage) }],
-          _meta: { cardHtml: prepareCardHtml(renderProductDetailBody(productPage)) },
+          _meta: { cardHtml: await prepareCardHtml(renderProductDetailBody(productPage), api) },
         };
       } catch (err) {
         return handleToolError(err, `get product "${product_id}"`);
@@ -463,7 +523,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
 
         return {
           content: [{ type: 'text' as const, text: formatCategoryPage(categoryPage) }],
-          _meta: { cardHtml: prepareCardHtml(renderCategoryPageBody(categoryPage)) },
+          _meta: { cardHtml: await prepareCardHtml(renderCategoryPageBody(categoryPage), api) },
         };
       } catch (err) {
         return handleToolError(err, `browse categories "${category_path}"`);
