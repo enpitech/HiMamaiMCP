@@ -166,7 +166,7 @@ export function formatSearchResults(results: SearchResults): string {
       else if (item.expirationTag === 'ENDS_TOMORROW') meta.push('מסתיים מחר');
       const suffix = meta.length > 0 ? ` | ${meta.join(' · ')}` : '';
       lines.push(`  • ${title}${suffix}`);
-      if (id) lines.push(`    ID: ${id}`);
+      if (id) lines.push(`    🔗 https://hi-mami.com/campaigns/${id}`);
     }
     lines.push('');
   }
@@ -186,7 +186,7 @@ export function formatSearchResults(results: SearchResults): string {
       }
       const suffix = meta.length > 0 ? ` | ${meta.join(' · ')}` : '';
       lines.push(`  • ${title}${suffix}`);
-      if (id) lines.push(`    ID: ${id}`);
+      if (id) lines.push(`    🔗 https://hi-mami.com/products/${id}`);
     }
     lines.push('');
   }
@@ -258,7 +258,9 @@ export function formatCampaignDetail(page: CampaignPage): string {
 
   // Meta
   lines.push(`📅 תאריכים: ${formatDate(c.startDate)} — ${formatDate(c.expirationDate)}`);
-  lines.push(`🔗 https://hi-mami.com/brands/${c.brandSlug}`);
+  lines.push('');
+  lines.push(`🔗 לצפייה במבצע: https://hi-mami.com/campaigns/${c.id}`);
+  lines.push(`🏷️ עמוד המותג: https://hi-mami.com/brands/${c.brandSlug}`);
 
   return lines.join('\n');
 }
@@ -314,7 +316,9 @@ export function formatProductDetail(page: ProductPage): string {
     lines.push(`🏷️ תגיות: ${p.tagKeys.join(', ')}`);
   }
 
-  lines.push(`🔗 https://hi-mami.com/brands/${p.brandSlug}`);
+  lines.push('');
+  lines.push(`🔗 לצפייה במוצר: https://hi-mami.com/products/${p.id}`);
+  lines.push(`🏷️ עמוד המותג: https://hi-mami.com/brands/${p.brandSlug}`);
 
   return lines.join('\n');
 }
@@ -350,7 +354,8 @@ export function formatBrandPage(page: BrandPage): string {
         if (tier) meta.push(tier);
         meta.push(expirationText(c.expirationTag, c.expirationDate));
         lines.push(`  • ${c.title.text}`);
-        lines.push(`    ${meta.join(' | ')} | ID: ${c.id}`);
+        lines.push(`    ${meta.join(' | ')}`);
+        lines.push(`    🔗 https://hi-mami.com/campaigns/${c.id}`);
       } else {
         const p = deal.data as ProductDetails;
         const meta: string[] = [];
@@ -358,7 +363,8 @@ export function formatBrandPage(page: BrandPage): string {
         if (p.price?.discountPercent) meta.push(`-${p.price.discountPercent}%`);
         meta.push(expirationText(p.expirationTag, p.expirationDate));
         lines.push(`  • ${p.title.text}`);
-        lines.push(`    ${meta.join(' | ')} | ID: ${p.id}`);
+        lines.push(`    ${meta.join(' | ')}`);
+        lines.push(`    🔗 https://hi-mami.com/products/${p.id}`);
       }
     }
     if (deals.length > 15) {
