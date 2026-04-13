@@ -1,9 +1,8 @@
 import { Router, type Request, type Response } from 'express';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import type { HiMamiApiClient } from '../services/himami-api.js';
-import { registerTools } from './mcp.js';
+import { createMcpServer } from './mcp.js';
 import { getDemoPageHtml, handleDemoApi } from './demo.js';
 import logger, { detectClient } from '../utils/logger.js';
 
@@ -29,14 +28,7 @@ async function handleMcpRequest(
   res: Response,
   apiClient: HiMamiApiClient,
 ): Promise<void> {
-  const server = new McpServer({
-      name: 'himami',
-      version: '1.0.0',
-      title: 'Hi Mami - הטבות ומבצעים',
-      description: 'Search deals, discounts, and offers on the Hi Mami platform',
-      icons: [{ src: 'https://www.hi-mami.com/images/mami_logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] }],
-    });
-  registerTools(server, apiClient);
+  const server = createMcpServer(apiClient);
 
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined, // stateless
@@ -79,14 +71,7 @@ export function createRouter(apiClient: HiMamiApiClient): Router {
 
   // SSE endpoint — GET (ChatGPT Connectors: establishes SSE stream)
   router.get('/mcp/sse', (req, res) => {
-    const server = new McpServer({
-      name: 'himami',
-      version: '1.0.0',
-      title: 'Hi Mami - הטבות ומבצעים',
-      description: 'Search deals, discounts, and offers on the Hi Mami platform',
-      icons: [{ src: 'https://www.hi-mami.com/images/mami_logo.svg', mimeType: 'image/svg+xml', sizes: ['any'] }],
-    });
-    registerTools(server, apiClient);
+    const server = createMcpServer(apiClient);
 
     const transport = new SSEServerTransport('/mcp/sse', res);
     const sessionId = transport.sessionId;
