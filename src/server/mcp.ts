@@ -302,39 +302,39 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
   // UI Resources — static app shells fetched by hosts for iframe rendering
   // ---------------------------------------------------------------------------
 
-  registerAppResource(server, 'Search Results UI', 'ui://himami/search-v2', {
+  registerAppResource(server, 'Search Results UI', 'ui://himami/search-v3', {
     description: 'Visual search results card for Hi Mami deals',
     mimeType: RESOURCE_MIME_TYPE,
   }, async () => ({
-    contents: [{ uri: 'ui://himami/search-v2', mimeType: RESOURCE_MIME_TYPE, text: searchShell, _meta: resourceCsp }],
+    contents: [{ uri: 'ui://himami/search-v3', mimeType: RESOURCE_MIME_TYPE, text: searchShell, _meta: resourceCsp }],
   }));
 
-  registerAppResource(server, 'Brand Page UI', 'ui://himami/brand-v2', {
+  registerAppResource(server, 'Brand Page UI', 'ui://himami/brand-v3', {
     description: 'Visual brand page card for Hi Mami',
     mimeType: RESOURCE_MIME_TYPE,
   }, async () => ({
-    contents: [{ uri: 'ui://himami/brand-v2', mimeType: RESOURCE_MIME_TYPE, text: brandShell, _meta: resourceCsp }],
+    contents: [{ uri: 'ui://himami/brand-v3', mimeType: RESOURCE_MIME_TYPE, text: brandShell, _meta: resourceCsp }],
   }));
 
-  registerAppResource(server, 'Campaign Detail UI', 'ui://himami/campaign-v2', {
+  registerAppResource(server, 'Campaign Detail UI', 'ui://himami/campaign-v3', {
     description: 'Visual campaign/deal detail card for Hi Mami',
     mimeType: RESOURCE_MIME_TYPE,
   }, async () => ({
-    contents: [{ uri: 'ui://himami/campaign-v2', mimeType: RESOURCE_MIME_TYPE, text: campaignShell, _meta: resourceCsp }],
+    contents: [{ uri: 'ui://himami/campaign-v3', mimeType: RESOURCE_MIME_TYPE, text: campaignShell, _meta: resourceCsp }],
   }));
 
-  registerAppResource(server, 'Product Detail UI', 'ui://himami/product-v2', {
+  registerAppResource(server, 'Product Detail UI', 'ui://himami/product-v3', {
     description: 'Visual product detail card for Hi Mami',
     mimeType: RESOURCE_MIME_TYPE,
   }, async () => ({
-    contents: [{ uri: 'ui://himami/product-v2', mimeType: RESOURCE_MIME_TYPE, text: productShell, _meta: resourceCsp }],
+    contents: [{ uri: 'ui://himami/product-v3', mimeType: RESOURCE_MIME_TYPE, text: productShell, _meta: resourceCsp }],
   }));
 
-  registerAppResource(server, 'Category Page UI', 'ui://himami/category-v2', {
+  registerAppResource(server, 'Category Page UI', 'ui://himami/category-v3', {
     description: 'Visual category listing card for Hi Mami',
     mimeType: RESOURCE_MIME_TYPE,
   }, async () => ({
-    contents: [{ uri: 'ui://himami/category-v2', mimeType: RESOURCE_MIME_TYPE, text: categoryShell, _meta: resourceCsp }],
+    contents: [{ uri: 'ui://himami/category-v3', mimeType: RESOURCE_MIME_TYPE, text: categoryShell, _meta: resourceCsp }],
   }));
 
   // -------------------------------------------------------------------------
@@ -360,7 +360,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         '- NEVER tell users to "click the card" — card links do not work\n' +
         '- To get full deal details (discount codes, redemption links), call get_campaign with the campaign ID',
       annotations: TOOL_ANNOTATIONS,
-      _meta: { ui: { resourceUri: 'ui://himami/search-v2' } },
+      _meta: { ui: { resourceUri: 'ui://himami/search-v3' } },
       inputSchema: {
         query: z.string().min(2).describe(
           'Search query in Hebrew or English. Examples: "nike", "ביוטי", "פיצה", "baby products", "superpharm". ' +
@@ -442,7 +442,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         'Common brand slugs: "nike", "superfarmonline", "ikea", "castro", "pizzahut", ' +
         '"golf", "terminalx", "erroca", "h-and-o", "cramim", "arad-textile".',
       annotations: TOOL_ANNOTATIONS,
-      _meta: { ui: { resourceUri: 'ui://himami/brand-v2' } },
+      _meta: { ui: { resourceUri: 'ui://himami/brand-v3' } },
       inputSchema: {
         brand_slug: z.string().describe(
           'Brand URL slug (lowercase, hyphens). Examples: "nike", "superfarmonline", "pizzahut", "h-and-o". ' +
@@ -491,7 +491,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         '- Show terms and conditions\n' +
         '- Always include the 🔗 deal URL as a clickable link',
       annotations: TOOL_ANNOTATIONS,
-      _meta: { ui: { resourceUri: 'ui://himami/campaign-v2' } },
+      _meta: { ui: { resourceUri: 'ui://himami/campaign-v3' } },
       inputSchema: {
         campaign_id: z.string().describe('Campaign ID from search_deals or get_brand results (e.g. "abc123")'),
       },
@@ -527,7 +527,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         '- Include the purchase link as a clickable URL\n' +
         '- Always include the 🔗 product URL',
       annotations: TOOL_ANNOTATIONS,
-      _meta: { ui: { resourceUri: 'ui://himami/product-v2' } },
+      _meta: { ui: { resourceUri: 'ui://himami/product-v3' } },
       inputSchema: {
         product_id: z.string().describe('Product ID from search_deals or get_brand results'),
       },
@@ -566,7 +566,7 @@ export function registerTools(server: McpServer, api: HiMamiApiClient): void {
         '- Always include the 🔗 URLs\n' +
         '- NEVER tell users to "click the card"',
       annotations: TOOL_ANNOTATIONS,
-      _meta: { ui: { resourceUri: 'ui://himami/category-v2' } },
+      _meta: { ui: { resourceUri: 'ui://himami/category-v3' } },
       inputSchema: {
         category_path: z.string().optional().default('')
           .describe(

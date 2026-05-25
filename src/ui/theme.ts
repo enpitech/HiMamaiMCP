@@ -457,7 +457,7 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-
   if(detectDark()){document.documentElement.setAttribute("data-theme","dark");}
 
   var PROXY_BASE="${proxyBaseUrl}/img?url=";
-  var nextId=1,pending={},app=document.getElementById("app");
+  var nextId=1,pending={},hostCaps=null,app=document.getElementById("app");
 
   function applyTheme(ctx){
     if(!ctx)return;
@@ -486,11 +486,12 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-
     }
   }
 
-  // Links cannot navigate inside the sandboxed iframe (target=_blank is blocked).
-  // Intercept clicks on anchors and ask the host to open them via the MCP Apps
-  // "ui/open-link" bridge. Delegated on the persistent #app so it survives
-  // every innerHTML swap. Inline onclick handlers are CSP-blocked, so this is
-  // the only way to make buttons/links work in Claude & ChatGPT.
+  // Open links via the host. The host advertises whether it supports opening
+  // links through hostCapabilities.openLinks (captured at initialize). When it
+  // does, intercept the click and send ui/open-link. When it does NOT, leave
+  // the native <a target="_blank"> alone so the host's own anchor handling /
+  // sandbox popup can take over — preventing both paths from failing silently.
+  // Delegated on the persistent #app so it survives every innerHTML swap.
   app.addEventListener("click",function(e){
     var el=e.target.closest?e.target.closest("a[href],[data-action]"):null;
     if(!el)return;
@@ -505,8 +506,11 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-
     }
     var url=el.getAttribute("data-url")||el.getAttribute("href");
     if(url&&/^(https?:|tel:|mailto:)/i.test(url)){
-      e.preventDefault();
-      req("ui/open-link",{url:url});
+      if(hostCaps&&(hostCaps.openLinks||hostCaps.sendOpenLink)){
+        e.preventDefault();
+        req("ui/open-link",{url:url});
+      }
+      // else: do not preventDefault — let the native anchor navigate.
     }
   });
 
@@ -533,6 +537,7 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-
   function notify(method,params){window.parent.postMessage({jsonrpc:"2.0",method:method,params:params||{}},"*");}
   function reportSize(){var h=Math.ceil(Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0))+2;notify("ui/notifications/size-changed",{width:document.documentElement.scrollWidth,height:h});}
   req("ui/initialize",{appInfo:{name:"himami",version:"1.0.0"},appCapabilities:{},protocolVersion:"2026-01-26"}).then(function(result){
+    if(result){hostCaps=result.hostCapabilities||null;}
     if(result&&result.hostContext){applyTheme(result.hostContext);}
     notify("ui/notifications/initialized");
     reportSize();
