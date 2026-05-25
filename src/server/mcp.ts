@@ -98,6 +98,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;d
 [data-theme="dark"]{--t:#E5E7EB;--t2:#9CA3AF;--mu:#9CA3AF;--bg:#1F2937;--bg2:#374151;--br:#4B5563;--br2:#374151;--pk:#F472B6;--gr:#4ADE80;--rd:#F87171;--am:#FBBF24;--bl:#60A5FA;--mp:#FBBF24;--sh:0 4px 12px rgba(0,0,0,0.3)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--t:#E5E7EB;--t2:#9CA3AF;--mu:#9CA3AF;--bg:#1F2937;--bg2:#374151;--br:#4B5563;--br2:#374151;--pk:#F472B6;--gr:#4ADE80;--rd:#F87171;--am:#FBBF24;--bl:#60A5FA;--mp:#FBBF24;--sh:0 4px 12px rgba(0,0,0,0.3)}}
 img{max-width:100%;height:auto;display:block;border-radius:8px}
+/* Override the shell's loading-spinner flex centering so injected cards align
+   to the top and fill width instead of floating in the middle of the iframe. */
+#app{display:block!important;align-items:stretch!important;justify-content:flex-start!important;min-height:0!important;width:100%!important}
 .search-header{padding:14px 16px;border-bottom:1px solid var(--br2)}
 .search-title{font-size:1rem;font-weight:700;color:var(--t)}
 .search-subtitle{font-size:0.8rem;color:var(--mu);margin-top:2px}
@@ -114,9 +117,11 @@ img{max-width:100%;height:auto;display:block;border-radius:8px}
 .deal-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
 .deal-footer{display:flex;justify-content:space-between;align-items:center;font-size:0.75rem;color:var(--mu);padding-top:6px;border-top:1px solid var(--br2)}
 .brand-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--br2)}
-.brand-row-logo{width:40px;height:40px;border-radius:8px;object-fit:contain;background:var(--bg2)}
-.brand-row-name{font-weight:600;font-size:0.9rem;color:var(--t)}
-.brand-row-desc{font-size:0.8rem;color:var(--mu);margin-top:2px}
+.brand-row-logo{flex:none;width:40px;height:40px;border-radius:8px;object-fit:contain;background:var(--bg2)}
+.brand-row-info{flex:1 1 auto;min-width:0}
+.brand-row-name{font-weight:600;font-size:0.9rem;color:var(--t);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brand-row-desc{font-size:0.8rem;color:var(--mu);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brand-row .entity-link{flex:none}
 .campaign-card,.product-card,.brand-card,.category-card,.home-card{background:var(--bg);border-radius:12px;border:1px solid var(--br);overflow:hidden;width:100%;max-width:100%;margin:0;box-shadow:var(--sh)}
 .campaign-brand-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--br2)}
 .campaign-brand-logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:var(--bg2)}
