@@ -38,9 +38,6 @@ import logger from '../utils/logger.js';
 // ---------------------------------------------------------------------------
 
 /** Remove all <a> tags, keeping inner content. */
-function stripLinks(html: string): string {
-  return html.replace(/<a\b[^>]*>/gi, '').replace(/<\/a>/gi, '');
-}
 
 /** Inline images as base64, remove any that fail to load. */
 async function inlineImages(html: string, api: HiMamiApiClient): Promise<string> {
@@ -64,11 +61,19 @@ async function inlineImages(html: string, api: HiMamiApiClient): Promise<string>
     }),
   );
 
+  // Cap the total inlined-image payload. Base64 images are large, and an
+  // oversized card (search can have many results) exceeds the host's widget
+  // size limit and renders blank in Claude. Inline within budget; images that
+  // don't fit are dropped (their wrappers hide via :not(:has(img))).
+  const INLINE_BUDGET = 180_000; // ~135 KB of binary across the whole card
+  let used = 0;
   const urlMap = new Map<string, string>();
   for (const { url, img } of results) {
-    if (img) {
-      urlMap.set(url, `data:${img.mimeType};base64,${img.data}`);
-    }
+    if (!img) continue;
+    const dataUri = `data:${img.mimeType};base64,${img.data}`;
+    if (used + dataUri.length > INLINE_BUDGET) continue;
+    urlMap.set(url, dataUri);
+    used += dataUri.length;
   }
 
   // Replace successful inlines, remove failed images entirely
@@ -177,8 +182,9 @@ img{max-width:100%;height:auto;display:block;border-radius:8px}
 
 /** Full post-processing pipeline for card HTML. */
 async function prepareCardHtml(html: string, api: HiMamiApiClient): Promise<string> {
-  const stripped = stripLinks(html);
-  const withImages = await inlineImages(stripped, api);
+  // Links are kept so the app shell can route clicks through the host's
+  // ui/open-link bridge (target=_blank is blocked inside the sandbox).
+  const withImages = await inlineImages(html, api);
   return CARD_CSS + withImages;
 }
 
