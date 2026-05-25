@@ -476,6 +476,30 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-
     }
   }
 
+  // Links cannot navigate inside the sandboxed iframe (target=_blank is blocked).
+  // Intercept clicks on anchors and ask the host to open them via the MCP Apps
+  // "ui/open-link" bridge. Delegated on the persistent #app so it survives
+  // every innerHTML swap. Inline onclick handlers are CSP-blocked, so this is
+  // the only way to make buttons/links work in Claude & ChatGPT.
+  app.addEventListener("click",function(e){
+    var el=e.target.closest?e.target.closest("a[href],[data-action]"):null;
+    if(!el)return;
+    var action=el.getAttribute("data-action");
+    if(action==="copy"){
+      e.preventDefault();
+      var text=el.getAttribute("data-copy")||el.textContent||"";
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text);}
+      var prev=el.textContent;el.textContent="הועתק ✓";
+      setTimeout(function(){el.textContent=prev;},1500);
+      return;
+    }
+    var url=el.getAttribute("data-url")||el.getAttribute("href");
+    if(url&&/^(https?:|tel:|mailto:)/i.test(url)){
+      e.preventDefault();
+      req("ui/open-link",{url:url});
+    }
+  });
+
   window.addEventListener("message",function(e){
     var m=e.data;
     if(!m||m.jsonrpc!=="2.0")return;
