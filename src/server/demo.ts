@@ -283,6 +283,31 @@ const DEMO_SHELL = `<!DOCTYPE html>
       ]);
     }
 
+    // Mock MCP host: the card shell inside each iframe talks to its parent
+    // (this page) over postMessage. Real hosts (Claude/ChatGPT) answer these;
+    // the demo must too, otherwise the ui/initialize handshake never completes
+    // and ui/open-link clicks (the deal/entity buttons) silently do nothing.
+    window.addEventListener('message', function(e) {
+      const m = e.data;
+      if (!m || m.jsonrpc !== '2.0') return;
+      const reply = function(result) {
+        if ('id' in m && e.source) {
+          e.source.postMessage({ jsonrpc: '2.0', id: m.id, result: result || {} }, '*');
+        }
+      };
+      if (m.method === 'ui/initialize') { reply({ hostContext: {} }); return; }
+      if (m.method === 'ping') { reply({}); return; }
+      if (m.method === 'ui/open-link' && m.params && m.params.url) {
+        log('ui/open-link → ' + m.params.url);
+        window.open(m.params.url, '_blank', 'noopener');
+        reply({});
+        return;
+      }
+      if (m.method === 'tools/call') { log('tools/call → ' + (m.params && m.params.name)); reply({}); return; }
+      if (m.method === 'ui/message') { log('ui/message → ' + JSON.stringify(m.params)); reply({}); return; }
+      // Notifications (no id): size-changed, initialized, etc. — ignore.
+    });
+
     // Auto-load on page load
     loadAll();
   </script>
