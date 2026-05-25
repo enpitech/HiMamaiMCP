@@ -113,7 +113,7 @@ img{max-width:100%;height:auto;display:block;border-radius:8px}
 .brand-row-logo{width:40px;height:40px;border-radius:8px;object-fit:contain;background:var(--bg2)}
 .brand-row-name{font-weight:600;font-size:0.9rem;color:var(--t)}
 .brand-row-desc{font-size:0.8rem;color:var(--mu);margin-top:2px}
-.campaign-card,.product-card,.brand-card,.category-card,.home-card{background:var(--bg);border-radius:12px;border:1px solid var(--br);overflow:hidden;max-width:480px;margin:0 auto;box-shadow:var(--sh)}
+.campaign-card,.product-card,.brand-card,.category-card,.home-card{background:var(--bg);border-radius:12px;border:1px solid var(--br);overflow:hidden;width:100%;max-width:100%;margin:0;box-shadow:var(--sh)}
 .campaign-brand-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--br2)}
 .campaign-brand-logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:var(--bg2)}
 .campaign-brand-name{font-weight:600;color:var(--t)}

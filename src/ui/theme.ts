@@ -139,7 +139,9 @@ export function generateBaseCSS(): string {
     html, body {
       width: 100%;
       height: auto;
-      overflow-x: hidden;
+      /* Host sizes the iframe to our reported height, so hide overflow to kill
+         the spurious vertical scrollbar from sub-pixel rounding. */
+      overflow: hidden;
     }
 
     body {
@@ -521,7 +523,7 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-
   });
   function req(method,params){return new Promise(function(resolve){var id=nextId++;pending[id]=resolve;window.parent.postMessage({jsonrpc:"2.0",method:method,params:params,id:id},"*");});}
   function notify(method,params){window.parent.postMessage({jsonrpc:"2.0",method:method,params:params||{}},"*");}
-  function reportSize(){notify("ui/notifications/size-changed",{width:document.documentElement.scrollWidth,height:document.documentElement.scrollHeight});}
+  function reportSize(){var h=Math.ceil(Math.max(document.documentElement.scrollHeight,document.body?document.body.scrollHeight:0))+2;notify("ui/notifications/size-changed",{width:document.documentElement.scrollWidth,height:h});}
   req("ui/initialize",{appInfo:{name:"himami",version:"1.0.0"},appCapabilities:{},protocolVersion:"2026-01-26"}).then(function(result){
     if(result&&result.hostContext){applyTheme(result.hostContext);}
     notify("ui/notifications/initialized");
