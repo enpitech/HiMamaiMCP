@@ -1,6 +1,5 @@
 import type { SearchResults } from '../types/index.js';
-import { wrapInHtmlDoc, hiMamiUrl, formatDate, escapeHtml, icon } from './theme.js';
-import { getTierBadge } from './campaign-card.js';
+import { wrapInHtmlDoc, hiMamiUrl, escapeHtml, icon } from './theme.js';
 
 export const searchCSS = `
   .search-header {
@@ -155,74 +154,41 @@ function extractDescription(item: Record<string, unknown>): string | null {
   return desc?.value?.text ?? null;
 }
 
+// Compact row for a deal (campaign/product). A full-width hero per result made
+// the search card several screens tall with slow-loading images; a small
+// thumbnail + meta line keeps it a tight, scannable list.
 function renderDealCard(item: Record<string, unknown>, type: 'campaign' | 'product'): string {
   const title = extractTitle(item);
   const imgUrl = extractImage(item);
-  const description = extractDescription(item);
   const id = item.id as string | undefined;
-  const expirationDate = item.expirationDate as string | undefined;
   const expirationTag = item.expirationTag as string | undefined;
-
-  // Image with validity overlay
-  let heroHtml = '';
-  if (imgUrl) {
-    const overlayHtml = expirationDate && expirationTag !== 'ENDED'
-      ? `<span class="validity-overlay">בתוקף עד ${formatDate(expirationDate)}</span>`
-      : '';
-    heroHtml = `<div class="deal-hero-wrap"><img class="deal-hero" src="${imgUrl}" alt="${escapeHtml(title)}">${overlayHtml}</div>`;
-  }
-
-  // Badges — max 2 to keep it clean
-  const badges: string[] = [];
   const discountPct = item.discountPercentage as number | undefined;
-  const tierType = item.tierType as string | undefined;
   const campaignTypeLabel = item.campaignTypeLabel as string | undefined;
   const price = item.price as { discountedPrice?: number; currency?: string; discountPercent?: number } | undefined;
-
-  if (discountPct) {
-    badges.push(`<span class="badge badge-discount">${discountPct}% הנחה</span>`);
-  } else if (price?.discountPercent) {
-    badges.push(`<span class="badge badge-discount">${price.discountPercent}% הנחה</span>`);
-  } else if (campaignTypeLabel === 'GIFT') {
-    badges.push(`<span class="badge badge-gift">${icon('gift')} מתנה</span>`);
-  }
-
-  const tierBadge = getTierBadge((tierType ?? 'STANDARD') as 'STANDARD' | 'MAMI_PLUS' | 'MAMI_PLUS_EXCLUSIVE');
-  if (tierBadge) badges.push(tierBadge);
-
-  if (expirationTag === 'ENDS_TODAY') {
-    badges.push(`<span class="badge badge-ends-today">${icon('clock')} מסתיים היום!</span>`);
-  } else if (expirationTag === 'ENDS_TOMORROW') {
-    badges.push(`<span class="badge badge-ends-tomorrow">${icon('clock')} מסתיים מחר</span>`);
-  }
-
-  // Price
   const brandName = extractBrandName(item);
-  let priceHtml = '';
-  if (price?.discountedPrice) {
-    priceHtml = `<span class="price-discounted">${price.discountedPrice} ${price.currency ?? '₪'}</span>`;
-  }
 
-  // Footer with price + link
+  // One short meta line: brand · discount/price · urgency.
+  const meta: string[] = [];
+  if (brandName) meta.push(brandName);
+  if (price?.discountedPrice) meta.push(`${price.discountedPrice} ${price.currency ?? '₪'}`);
+  if (discountPct) meta.push(`${discountPct}% הנחה`);
+  else if (price?.discountPercent) meta.push(`${price.discountPercent}% הנחה`);
+  else if (campaignTypeLabel === 'GIFT') meta.push('מתנה');
+  if (expirationTag === 'ENDS_TODAY') meta.push('מסתיים היום!');
+  else if (expirationTag === 'ENDS_TOMORROW') meta.push('מסתיים מחר');
+
+  const thumbHtml = imgUrl
+    ? `<img class="brand-row-logo" src="${imgUrl}" alt="${escapeHtml(title)}">`
+    : '';
   const entityUrl = id ? hiMamiUrl(type, id) : null;
-  const linkHtml = entityUrl
-    ? `<div class="deal-footer-link"><a class="entity-link" href="${entityUrl}" target="_blank" rel="noopener" aria-label="${escapeHtml(title)} - לפרטים">לפרטים ←</a></div>`
-    : '';
 
-  const footerHtml = priceHtml
-    ? `<div class="deal-footer"><span></span>${priceHtml}</div>`
-    : '';
-
-  return `<div class="deal-card">
-    ${heroHtml}
-    <div class="deal-body">
-      ${brandName ? `<div class="deal-brand">${escapeHtml(brandName)}</div>` : ''}
-      ${badges.length > 0 ? `<div class="deal-badges">${badges.join('')}</div>` : ''}
-      <div class="deal-title">${escapeHtml(title)}</div>
-      ${description ? `<div class="deal-description">${escapeHtml(description)}</div>` : ''}
-      ${footerHtml}
-      ${linkHtml}
+  return `<div class="brand-row">
+    ${thumbHtml}
+    <div class="brand-row-info">
+      <div class="brand-row-name">${escapeHtml(title)}</div>
+      ${meta.length > 0 ? `<div class="brand-row-desc">${escapeHtml(meta.join(' · '))}</div>` : ''}
     </div>
+    ${entityUrl ? `<a class="entity-link" href="${entityUrl}" target="_blank" rel="noopener" aria-label="${escapeHtml(title)} - לפרטים">לפרטים ←</a>` : ''}
   </div>`;
 }
 
@@ -269,19 +235,26 @@ export function renderSearchResultsBody(results: SearchResults): string {
     <div class="search-subtitle">${totalResults} תוצאות ב-Hi Mami</div>
   </div>`);
 
-  // Campaigns — rendered as rich deal cards with hero images
-  for (const raw of results.campaigns.items) {
-    parts.push(renderDealCard(raw as Record<string, unknown>, 'campaign'));
-  }
+  // Compact rows, capped per group so the card stays roughly one screen.
+  // The full list (with links) is in the text response for the model to relay.
+  const sectionRow = (label: string): string =>
+    `<div class="search-section-label">${label}</div>`;
 
-  // Products — rendered as rich deal cards
-  for (const raw of results.products.items) {
-    parts.push(renderDealCard(raw as Record<string, unknown>, 'product'));
-  }
+  const campaigns = results.campaigns.items.slice(0, 6);
+  const products = results.products.items.slice(0, 4);
+  const brands = results.brands.items.slice(0, 6);
 
-  // Brands — compact rows with logo
-  for (const raw of results.brands.items) {
-    parts.push(renderBrandRow(raw as Record<string, unknown>));
+  if (campaigns.length > 0) {
+    parts.push(sectionRow(`${icon('tag')} מבצעים`));
+    for (const raw of campaigns) parts.push(renderDealCard(raw as Record<string, unknown>, 'campaign'));
+  }
+  if (products.length > 0) {
+    parts.push(sectionRow(`${icon('package')} מוצרים`));
+    for (const raw of products) parts.push(renderDealCard(raw as Record<string, unknown>, 'product'));
+  }
+  if (brands.length > 0) {
+    parts.push(sectionRow(`${icon('star')} מותגים`));
+    for (const raw of brands) parts.push(renderBrandRow(raw as Record<string, unknown>));
   }
 
   return parts.join('');

@@ -102,6 +102,7 @@ img{max-width:100%;height:auto;display:block;border-radius:8px}
 .search-title{font-size:1rem;font-weight:700;color:var(--t)}
 .search-subtitle{font-size:0.8rem;color:var(--mu);margin-top:2px}
 .search-empty{text-align:center;padding:32px 16px;color:var(--mu)}
+.search-section-label{display:flex;align-items:center;gap:6px;font-size:0.8rem;font-weight:700;color:var(--pk);padding:12px 16px 4px}
 .deal-card{border-bottom:1px solid var(--br2);overflow:hidden}
 .deal-card:last-child{border-bottom:none}
 .deal-hero-wrap{position:relative;overflow:hidden}
