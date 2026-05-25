@@ -474,7 +474,15 @@ export function createMcpAppShell(extraCSS = '', proxyBaseUrl = 'https://himami-
       if(src&&(src.indexOf("http://")===0||src.indexOf("https://")===0)&&src.indexOf(PROXY_BASE)===-1){
         imgs[i].setAttribute("src",PROXY_BASE+encodeURIComponent(src));
       }
-      imgs[i].onerror=function(){this.style.opacity="0.3";this.style.minHeight="20px";this.style.background="rgba(128,128,128,0.1)";};
+      // If an image fails, hide it and collapse its hero/thumbnail container so
+      // we never leave an empty fixed-height box (host renderers don't reliably
+      // honor :has() collapse). Then re-report size so the iframe shrinks.
+      imgs[i].onerror=function(){
+        this.style.display="none";
+        var hero=this.closest&&this.closest(".deal-hero-wrap,.brand-hero,.campaign-hero-wrap,.product-hero-wrap");
+        if(hero)hero.style.display="none";
+        reportSize();
+      };
     }
   }
 
